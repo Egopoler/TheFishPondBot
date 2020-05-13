@@ -1,7 +1,8 @@
 # Импортируем необходимые классы.
 from telegram.ext import Updater, MessageHandler, Filters
-from telegram.ext import CallbackContext, CommandHandler
+from telegram.ext import CallbackContext, CommandHandler, ConversationHandler
 from token_t_bot import TOKEN
+from register_func import check_name, check_password
 
 
 # Определяем функцию-обработчик сообщений.
@@ -14,6 +15,35 @@ def echo(update, context):
     # отсылающий ответ пользователю, от которого получено сообщение.
     mes = "Я получил сообщение " + update.message.text
     update.message.reply_text(mes)
+
+
+def register(update, context):
+    update.message.reply_text("Напишите имя пользователя, под которым вы хотите войти")
+    return 1
+
+
+def register1(update, context):
+    return_check_name = check_name(update.message.text)
+    if return_check_name == 1:
+        update.message.reply_text("Вы заходите под именем Администратра, напишите пароль")
+        context.user_data['return_check_name'] = return_check_name
+        return 2
+    elif return_check_name == 2:
+        update.message.reply_text("Имя пользователя уже занято, введите другое")
+    elif return_check_name == 0:
+        context.user_data['return_check_name'] = return_check_name
+        return 2
+
+
+def register2(update, context):
+    return_check_name = context.user_data['return_check_name']
+    if return_check_name == 1:
+        if check_password(update.message.text):
+            pass  #TODO
+
+
+def stop():
+    pass
 
 
 def main():
@@ -29,6 +59,24 @@ def main():
     # После регистрации обработчика в диспетчере
     # эта функция будет вызываться при получении сообщения
     # с типом "текст", т. е. текстовых сообщений.
+    register_handler = ConversationHandler(
+        # Точка входа в диалог.
+        # В данном случае — команда /start. Она задаёт первый вопрос.
+        entry_points=[CommandHandler('register', register)],
+
+        # Состояние внутри диалога.
+        # Вариант с двумя обработчиками, фильтрующими текстовые сообщения.
+        states={
+            # Функция читает ответ на первый вопрос и задаёт второй.
+            1: [MessageHandler(Filters.text, register1, pass_user_data=True)],
+            # Функция читает ответ на второй вопрос и завершает диалог.
+            2: [MessageHandler(Filters.text, register2, pass_user_data=True)]
+        },
+
+        # Точка прерывания диалога. В данном случае — команда /stop.
+        fallbacks=[CommandHandler('stop', stop)]
+    )
+    dp.add_handler(register_handler)
     text_handler = MessageHandler(Filters.text, echo)
 
     # Регистрируем обработчик в диспетчере.
