@@ -4,7 +4,6 @@ from telegram.ext import CallbackContext, CommandHandler
 from token_t_bot import TOKEN
 
 
-# Определяем функцию-обработчик сообщений.
 # У неё два параметра, сам бот и класс updater, принявший сообщение.
 def echo(update, context):
     # У объекта класса Updater есть поле message,
