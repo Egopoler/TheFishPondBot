@@ -2,7 +2,8 @@
 from telegram.ext import Updater, MessageHandler, Filters
 from telegram.ext import CallbackContext, CommandHandler, ConversationHandler
 from token_t_bot import TOKEN
-from register_func import check_name, check_password
+from register_func import check_name, check_password, register_flag, add_user, \
+    Admin, check_Admin, change_Admin, check_register, close_register, open_register, check_game_code
 
 
 # Определяем функцию-обработчик сообщений.
@@ -15,6 +16,12 @@ def echo(update, context):
     # отсылающий ответ пользователю, от которого получено сообщение.
     mes = "Я получил сообщение " + update.message.text
     update.message.reply_text(mes)
+
+
+def us_id(update, context):
+    global Admin
+    Admin = update.chat.id
+    print(Admin)
 
 
 def register(update, context):
@@ -32,14 +39,23 @@ def register1(update, context):
         update.message.reply_text("Имя пользователя уже занято, введите другое")
     elif return_check_name == 0:
         context.user_data['return_check_name'] = return_check_name
+        context.user_data["name"] = update.message.text
+        update.message.reply_text("Введитете код, который позволит вам присоединиться к игре")
         return 2
 
 
 def register2(update, context):
+    global Admin
     return_check_name = context.user_data['return_check_name']
     if return_check_name == 1:
         if check_password(update.message.text):
-            pass  #TODO
+            change_Admin(update.chat.id)
+            print(Admin)
+    if return_check_name == 0:
+        if check_register():
+            if check_game_code(update.message.text):
+                add_user(context.user_data["name"], update.message.text, int(update.chat.id))
+                update.message.reply_text("Вы успешно зашли под именем {}".format(context.user_data["name"]))
 
 
 def stop():
@@ -77,9 +93,11 @@ def main():
         fallbacks=[CommandHandler('stop', stop)]
     )
     dp.add_handler(register_handler)
+
     text_handler = MessageHandler(Filters.text, echo)
 
     # Регистрируем обработчик в диспетчере.
+    dp.add_handler(CommandHandler('us_id', us_id))
     dp.add_handler(text_handler)
     # Запускаем цикл приема и обработки сообщений.
     updater.start_polling()
