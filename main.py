@@ -18,12 +18,6 @@ def echo(update, context):
     update.message.reply_text(mes)
 
 
-def us_id(update, context):
-    print(update)
-    Admin = update.message.chat.id
-    print(Admin)
-
-
 def register(update, context):
     update.message.reply_text("""Напишите имя пользователя, под которым вы хотите войти.
     Если вы хотите прервать диалог напишите Стоп.""")
@@ -138,7 +132,6 @@ def main():
     text_handler = MessageHandler(Filters.text, echo)
 
     # Регистрируем обработчик в диспетчере.
-    dp.add_handler(CommandHandler('us_id', us_id))
     dp.add_handler(text_handler)
     # Запускаем цикл приема и обработки сообщений.
     updater.start_polling()
