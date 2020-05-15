@@ -2,10 +2,15 @@ import db_session
 from users import User
 
 register_flag = False
-Admin = ""
 
 
 def check_name(name, db="TheFishPondBot.sqlite"):
+    """
+    Функция проверяет на уникальность имя пользователя(name) в таблице
+    :param name: Имя пользователя
+    :param db: База данных
+    :return: ответ для проверки
+    """
     db_session.global_init(db)
     session = db_session.create_session()
     for user in session.query(User).filter(User.name == name):
@@ -16,6 +21,13 @@ def check_name(name, db="TheFishPondBot.sqlite"):
 
 
 def check_password(password, name="Admin", db="TheFishPondBot.sqlite"):
+    """
+    Проверяет пароль
+    :param password: пароль, который ввел пользователь
+    :param name: имя пользователя
+    :param db: таблица
+    :return: True/False
+    """
     db_session.global_init(db)
     session = db_session.create_session()
     for user in session.query(User).filter(User.name == name):
@@ -25,28 +37,43 @@ def check_password(password, name="Admin", db="TheFishPondBot.sqlite"):
 
 
 def check_register():
+    """
+    Функция проверяет закрыта/открыта регистрация
+    :return: True/False
+    """
     global register_flag
     return register_flag
 
 
 def close_register():
+    """
+    Закрывает регистрацию
+    :return: None
+    """
     global register_flag
     register_flag = False
 
 
 def open_register():
+    """
+    Открывает регистрацию
+    :return: None
+    """
     global register_flag
     register_flag = True
 
 
 def change_Admin(admin_id, db="TheFishPondBot.sqlite"):
+    """Сменяет user_id Admin"""
     db_session.global_init(db)
     session = db_session.create_session()
     user = session.query(User).filter(User.name == "Admin").first()
     user.user_id = admin_id
+    session.commit()
 
 
 def check_Admin(user_id, db="TheFishPondBot.sqlite"):
+    """Проверяет, является ли пользователь Admin"""
     db_session.global_init(db)
     session = db_session.create_session()
     for user in session.query(User).filter(User.name == "Admin"):
@@ -56,15 +83,26 @@ def check_Admin(user_id, db="TheFishPondBot.sqlite"):
 
 
 def check_game_code(code, db="TheFishPondBot.sqlite", admin="Admin"):
+    """Проверка игрового кода для входа"""
     db_session.global_init(db)
     session = db_session.create_session()
     for user in session.query(User).filter(User.name == admin):
-        if user.game == code:
+        if str(user.game) == str(code):
             return True
     return False
 
 
+def change_game_code(code, user_name, db="TheFishPondBot.sqlite"):
+    """Изменение игрового кода для входа"""
+    db_session.global_init(db)
+    session = db_session.create_session()
+    user = session.query(User).filter(User.name == user_name).first()
+    user.game = str(code)
+    session.commit()
+
+
 def add_user(name, game, user_id_, db="TheFishPondBot.sqlite"):
+    """Добавляет пользователя"""
     user = User()
     user.name = name
     user.game = game
