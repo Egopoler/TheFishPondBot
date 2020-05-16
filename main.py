@@ -1,4 +1,3 @@
-# Импортируем необходимые классы.
 from telegram.ext import Updater, MessageHandler, Filters
 from telegram.ext import CallbackContext, CommandHandler, ConversationHandler
 from token_t_bot import TOKEN
@@ -6,7 +5,6 @@ from register_func import check_name, check_password, register_flag, add_user, c
     check_Admin, change_Admin, check_register, close_register, open_register, check_game_code
 from telegram import ReplyKeyboardMarkup
 
-FLAG = 'admin'
 
 main_kb_user = [["Остаток рыб", "Остаток времени", "Мои рыбы"],
                 ["Регистрация", "Рыбалка"]]
@@ -75,15 +73,7 @@ def my_fish():
     pass
 
 
-def registration():
-    pass
-
-
 def fishing():
-    pass
-
-
-def start_game():
     pass
 
 
@@ -167,11 +157,10 @@ def send_message(update, context):
 
 
 def start(update, context):
-    global FLAG
-    if FLAG == 'user':
-        update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_user)
-    elif FLAG == 'admin':
+    if check_Admin(update.message.chat.id):
         update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_admin)
+    else:
+        update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_user)
 
 
 def register(update, context):
@@ -285,7 +274,6 @@ def main():
     )
     dp.add_handler(register_handler)
     dp.add_handler(start_game_handler)
-    text_handler = MessageHandler(Filters.text, echo)
 
     # Регистрируем обработчик в диспетчере.
     text_handler = MessageHandler(Filters.text, send_message)
