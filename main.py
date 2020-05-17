@@ -5,6 +5,7 @@ from register_func import check_name, check_password, register_flag, add_user, c
     check_Admin, change_Admin, check_register, close_register, open_register, check_game_code
 from telegram import ReplyKeyboardMarkup
 
+OPENED = True
 
 main_kb_user = [["Остаток рыб", "Остаток времени", "Мои рыбы"],
                 ["Регистрация", "Рыбалка"]]
@@ -22,7 +23,7 @@ statuses_kb_admin = [["Остаток времени", "Лог поведени�
 hmfip_kb_user = [["/how_much_fish_in_pond", "Назад"]]
 hmt_kb_user = [["/how_much_time", "Назад"]]
 mf_kb_user = [["/my_fish", "Назад"]]
-r_kb_user = [["/registration", "Назад"]]
+r_kb_user = [["/register", "Назад"]]
 f_kb_user = [['1', "2", "3"], ['Назад']]
 
 sg_kb_admin = [["/start_game", "Назад <-"]]
@@ -191,6 +192,7 @@ def register1(update, context):
 
 
 def register2(update, context):
+    global OPENED
     if update.message.text.lower() == "стоп":
         update.message.reply_text("Вы прервали диалог")
         return ConversationHandler.END
@@ -199,6 +201,8 @@ def register2(update, context):
         if check_password(update.message.text):
             change_Admin(update.message.chat.id)
             update.message.reply_text("Вы получили права Администратора")
+            OPENED = False
+            update.message.reply_text('Отправте /start чтобы обновить клавиатуру')
             return ConversationHandler.END
 
     elif return_check_name == 0:
@@ -206,6 +210,7 @@ def register2(update, context):
             if check_game_code(update.message.text):
                 add_user(context.user_data["name"], update.message.text, int(update.message.chat.id))
                 update.message.reply_text("Вы успешно зашли под именем {}".format(context.user_data["name"]))
+                update.message.reply_text('''Теперь нажмите на /user_start и подождите, пока ведущий запустит игру''')
                 return ConversationHandler.END
             else:
                 update.message.reply_text("""Вы ввели неправильный код, попробуйте еще раз.
@@ -216,16 +221,22 @@ def register2(update, context):
 
 
 def start_game(update, context):
-    if check_Admin(update.message.chat.id):
+    if check_Admin(update.message.chat.id) and not check_register():
         update.message.reply_text("""Введите код, который позволит пользователям присоединиться к игре.
     Если вы хотите прервать диалог напишите Стоп.""")
         return 1
+    elif check_Admin(update.message.chat.id) and OPENED:
+        update.message.reply_text('''Чтобы начать игру убедитесь, что все игроки зарегистрированы и закройте 
+        регистрацию, написав "закрыть".
+        После этого игра запустится автоматически''')
+        return 2
     else:
         update.message.reply_text("Только Администратор может пользоваться данной командой")
         return ConversationHandler.END
 
 
 def start_game1(update, context):
+    global OPENED
     if update.message.text.lower() == "стоп":
         update.message.reply_text("Вы прервали диалог")
         return ConversationHandler.END
@@ -233,10 +244,29 @@ def start_game1(update, context):
         change_game_code(update.message.text, "Admin")
         open_register()
         update.message.reply_text("Вы открыли регистрацию, код: {}".format(update.message.text))
+        update.message.reply_text('Нажмите кнопку /start_game')
+        OPENED = True
         return ConversationHandler.END
     else:
         update.message.reply_text("Только Администратор может пользоваться данной командой")
         return ConversationHandler.END
+
+
+def start_game2(update, context):
+    if check_Admin(update.message.chat.id) and OPENED and check_register() and update.message.text.lower() == 'закрыть':
+        close_register()
+        update.message.reply_text('''Регистрация закрыта и игра начата!''')
+        file = open('game_started.txt', 'w')
+        file.write('true')
+        file.close()
+
+
+def user_start_func(update, context):
+    pass  # TODO
+
+
+def user_start_func1():
+    pass  # Todo
 
 
 def stop(update, context):
@@ -257,6 +287,7 @@ def main():
     # После регистрации обработчика в диспетчере
     # эта функция будет вызываться при получении сообщения
     # с типом "текст", т. е. текстовых сообщений.
+
     start_game_handler = ConversationHandler(
         entry_points=[CommandHandler('register', register)],
         states={
@@ -268,7 +299,15 @@ def main():
     register_handler = ConversationHandler(
         entry_points=[CommandHandler('start_game', start_game)],
         states={
-            1: [MessageHandler(Filters.text, start_game1)]
+            1: [MessageHandler(Filters.text, start_game1)],
+            2: [MessageHandler(Filters.text, start_game2)]
+        },
+        fallbacks=[CommandHandler('stop', stop)]
+    )
+    user_start = ConversationHandler(
+        entry_points=[CommandHandler('user_start', user_start_func)],  # сделать цикл который будет ждать,
+        states={
+            1: [MessageHandler(Filters.text, user_start_func1)]  # пока ведущий не начнёт игру
         },
         fallbacks=[CommandHandler('stop', stop)]
     )
