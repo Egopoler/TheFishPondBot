@@ -4,8 +4,9 @@ from token_t_bot import TOKEN
 from register_func import check_name, check_password, register_flag, add_user, change_game_code, \
     check_Admin, change_Admin, check_register, close_register, open_register, check_game_code
 from telegram import ReplyKeyboardMarkup
+import asyncio
 
-OPENED = True
+GAME = False
 
 main_kb_user = [["Остаток рыб", "Остаток времени", "Мои рыбы"],
                 ["Регистрация", "Рыбалка"]]
@@ -170,7 +171,7 @@ def register(update, context):
     return 1
 
 
-def register1(update, context):
+async def register1(update, context):
     if update.message.text.lower() == "стоп":
         update.message.reply_text("Вы прервали диалог")
         return ConversationHandler.END
@@ -220,7 +221,7 @@ def register2(update, context):
             return ConversationHandler.END
 
 
-def start_game(update, context):
+async def start_game(update, context):
     if check_Admin(update.message.chat.id) and not check_register():
         update.message.reply_text("""Введите код, который позволит пользователям присоединиться к игре.
     Если вы хотите прервать диалог напишите Стоп.""")
@@ -235,7 +236,7 @@ def start_game(update, context):
         return ConversationHandler.END
 
 
-def start_game1(update, context):
+async def start_game1(update, context):
     global OPENED
     if update.message.text.lower() == "стоп":
         update.message.reply_text("Вы прервали диалог")
@@ -252,21 +253,35 @@ def start_game1(update, context):
         return ConversationHandler.END
 
 
-def start_game2(update, context):
+async def start_game2(update, context):
+    global GAME
     if check_Admin(update.message.chat.id) and OPENED and check_register() and update.message.text.lower() == 'закрыть':
         close_register()
+        with open("game_started.txt") as file_handler:
+            file_handler.write('true')
+
         update.message.reply_text('''Регистрация закрыта и игра начата!''')
-        file = open('game_started.txt', 'w')
-        file.write('true')
-        file.close()
+        return ConversationHandler.END
 
 
-def user_start_func(update, context):
-    pass  # TODO
+async def user_start_func(update, context):
+    global GAME
+    update.message.send_text('''Подождите пока ведущий начнёт игру.''')
+    if update.message.text.lower() == "стоп":
+        update.message.reply_text("Вы прервали диалог")
+    while True:
+        with open("game_started.txt") as file_handler:
+            a = file_handler.readable()
+            if 'true' in a:
+                break
+        if GAME:
+            break
+    update.message.send_text('''игра началась''')
+    return ConversationHandler.END
 
 
 def user_start_func1():
-    pass  # Todo
+    pass
 
 
 def stop(update, context):
@@ -274,7 +289,7 @@ def stop(update, context):
     pass
 
 
-def main():
+async def main():
     # Создаём объект updater.
     # Вместо слова "TOKEN" надо разместить полученный от @BotFather токен
     updater = Updater(TOKEN, use_context=True)
@@ -305,10 +320,8 @@ def main():
         fallbacks=[CommandHandler('stop', stop)]
     )
     user_start = ConversationHandler(
-        entry_points=[CommandHandler('user_start', user_start_func)],  # сделать цикл который будет ждать,
-        states={
-            1: [MessageHandler(Filters.text, user_start_func1)]  # пока ведущий не начнёт игру
-        },
+        entry_points=[CommandHandler('user_start', user_start_func)],
+        states={1: [user_start_func1]},
         fallbacks=[CommandHandler('stop', stop)]
     )
     dp.add_handler(register_handler)
@@ -324,4 +337,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
