@@ -2,7 +2,7 @@ from telegram.ext import Updater, MessageHandler, Filters
 from telegram.ext import CallbackContext, CommandHandler, ConversationHandler
 from token_t_bot import TOKEN
 from register_func import check_name, check_password, register_flag, add_user, change_game_code, \
-    check_Admin, change_Admin, check_register, close_register, open_register, check_game_code
+    check_Admin, change_Admin, check_register, close_register, open_register, check_game_code, get_ids_playing
 from telegram import ReplyKeyboardMarkup
 
 
@@ -205,6 +205,7 @@ def register2(update, context):
         if check_register():
             if check_game_code(update.message.text):
                 add_user(context.user_data["name"], update.message.text, int(update.message.chat.id))
+                change_game_code(update.message.text, context.user_data["name"])
                 update.message.reply_text("Вы успешно зашли под именем {}".format(context.user_data["name"]))
                 return ConversationHandler.END
             else:
@@ -234,6 +235,18 @@ def start_game1(update, context):
         open_register()
         update.message.reply_text("Вы открыли регистрацию, код: {}".format(update.message.text))
         return ConversationHandler.END
+    else:
+        update.message.reply_text("Только Администратор может пользоваться данной командой")
+        return ConversationHandler.END
+
+
+def first_round(update, context):
+    if check_Admin(update.message.chat.id):
+        close_register()
+        ids = get_ids_playing()
+        for id in ids:
+            context.bot.send_message(id, text='Начался первый раунд!')
+
     else:
         update.message.reply_text("Только Администратор может пользоваться данной командой")
         return ConversationHandler.END
@@ -272,6 +285,8 @@ def main():
         },
         fallbacks=[CommandHandler('stop', stop)]
     )
+    hand = CommandHandler('first_round', first_round)
+    dp.add_handler(hand)
     dp.add_handler(register_handler)
     dp.add_handler(start_game_handler)
 
