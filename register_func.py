@@ -113,6 +113,18 @@ def add_user(name, game, user_id_, db="TheFishPondBot.sqlite"):
     session.commit()
 
 
+def get_name_playing(db="TheFishPondBot.sqlite"):
+    db_session.global_init(db)
+    session = db_session.create_session()
+    game_admin = session.query(User.game).filter(User.name == 'Admin').first()[0]
+    lst_of_names = []
+    for user in session.query(User).filter(User.game == game_admin):
+        if user.name not in lst_of_names:
+            if user.name != 'Admin':
+                lst_of_names.append(user.name)
+    return lst_of_names
+
+
 def get_ids_playing(db="TheFishPondBot.sqlite"):
     db_session.global_init(db)
     session = db_session.create_session()
@@ -122,3 +134,4 @@ def get_ids_playing(db="TheFishPondBot.sqlite"):
         if user.user_id not in lst_of_ids:
             lst_of_ids.append(user.user_id)
     return lst_of_ids
+

@@ -1,19 +1,16 @@
 import xlsxwriter
+from register_func import get_name_playing
 
 
 def create_table(table_name):
     workbook = xlsxwriter.Workbook(table_name)
     worksheet = workbook.add_worksheet()
-    data = [('Развлечения', 6800), ('Продукты', 25670), ('Транспорт', 3450), ]
+    data = ['Игрок'] + get_name_playing() + ['Пруд']
 
-    for row, (item, price) in enumerate(data):
-        worksheet.write(row, 0, item)
-        worksheet.write(row, 1, price)
+    for row, name_user in enumerate(data):
+        worksheet.write(row, 0, name_user)
 
     row += 1
-    worksheet.write(row, 0, 'Всего')
-    worksheet.write(row, 1, '=SUM(B1:B3)')
-
     workbook.close()
 
 
