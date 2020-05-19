@@ -4,7 +4,7 @@ from token_t_bot import TOKEN
 from register_func import check_name, check_password, register_flag, add_user, change_game_code, \
     check_Admin, change_Admin, check_register, close_register, open_register, check_game_code, get_ids_playing
 from telegram import ReplyKeyboardMarkup
-
+from excel_writer import create_table, save_data
 
 main_kb_user = [["Остаток рыб", "Остаток времени", "Мои рыбы"],
                 ["Регистрация", "Рыбалка"]]
@@ -246,6 +246,7 @@ def first_round(update, context):
         ids = get_ids_playing()
         for id in ids:
             context.bot.send_message(id, text='Начался первый раунд!')
+            create_table("game.xlsx")
 
     else:
         update.message.reply_text("Только Администратор может пользоваться данной командой")
