@@ -4,7 +4,10 @@ from token_t_bot import TOKEN
 from register_func import check_name, check_password, register_flag, add_user, change_game_code, \
     check_Admin, change_Admin, check_register, close_register, open_register, check_game_code
 from telegram import ReplyKeyboardMarkup
+import time
+import asyncio
 
+TIME = 0
 
 main_kb_user = [["Остаток рыб", "Остаток времени", "Мои рыбы"],
                 ["Регистрация", "Рыбалка"]]
@@ -17,7 +20,7 @@ fishing_kb_user = [['Ловить рыбу'], ['Назад']]
 main_kb_admin = [["Игра", "Таймер"], ["Статусы"]]
 game_kb_admin = [["Начать", "Остановить"], ["Назад <-"]]
 timer_kb_admin = [["Включить таймер (2 мин)"], ["Назад <-"]]
-statuses_kb_admin = [["Остаток времени", "Лог поведения", "Кол-во рыб в пруду"], ["Кол-во рыб в N раунде", "Назад <-"]]
+statuses_kb_admin = [["Оcтаток времени", "Лог поведения", "Кол-во рыб в пруду"], ["Кол-во рыб в N раунде", "Назад <-"]]
 
 hmfip_kb_user = [["/how_much_fish_in_pond", "Назад"]]
 hmt_kb_user = [["/how_much_time", "Назад"]]
@@ -65,10 +68,6 @@ def how_much_fish_in_pond():
     pass
 
 
-def how_much_time():
-    pass
-
-
 def my_fish():
     pass
 
@@ -81,20 +80,42 @@ def stop_game():
     pass
 
 
-def start_new_timer(update, context):
+async def start_new_timer(update, context):
+    """Добавляем задачу в очередь"""
     chat_id = update.message.chat_id
-    due = 3
+    due = 10
+
     if 'job' in context.chat_data:
         old_job = context.chat_data['job']
         old_job.schedule_removal()
     new_job = context.job_queue.run_once(task, due, context=chat_id)
     context.chat_data['job'] = new_job
-    update.message.reply_text(f"""Таймер установлен. Две минуты начались.""")
+    update.message.reply_text('Раунд начался. У игроков есть две минуты.')
+    await asyncio.gather(user_timer(update, due))
 
 
 def task(context):
     job = context.job
-    context.bot.send_message(job.context, text='Дзинь-Дзинь! Раунд закончился!')
+    context.bot.send_message(job.context, text='Вернулся!')
+
+
+async def user_timer(update, sec):
+    global TIME
+    TIME = sec
+    update.message.reply_text('Раунд начался. У игроков есть две минуты.')
+    for i in range(sec):
+        TIME = sec
+        sec -= 1
+        if sec == 5:
+            update.message.reply_text('Осталась одна минута.')
+        time.sleep(1)
+    update.message.reply_text('Раунд закончился.')
+
+
+def how_much_time(update, context):
+    global TIME
+    update.message.reply_text(f'Осталось {TIME} секунд')
+    return 1
 
 
 def log_conduct():
@@ -144,7 +165,7 @@ def send_message(update, context):
         update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_snt_kb_admin)
     elif update.message.text == "Статусы":
         update.message.reply_text("Управление статусами", reply_markup=markup_statuses_kb_admin)
-    elif update.message.text == "Остаток времени":
+    elif update.message.text == "Оcтаток времени":
         update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_hmt_kb_admin)
     elif update.message.text == "Лог поведения":
         update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_l_kb_admin)
@@ -160,7 +181,7 @@ def start(update, context):
     if check_Admin(update.message.chat.id):
         update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_admin)
     else:
-        update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_user)
+        update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_admin)
 
 
 def register(update, context):
@@ -218,7 +239,7 @@ def register2(update, context):
 def start_game(update, context):
     if check_Admin(update.message.chat.id):
         update.message.reply_text("""Введите код, который позволит пользователям присоединиться к игре.
-    Если вы хотите прервать диалог напишите Стоп""")
+    Если вы хотите прервать диалог напишите Стоп.""")
         return 1
     else:
         update.message.reply_text("Только Администратор может пользоваться данной командой")
@@ -247,7 +268,7 @@ def stop(update, context):
 def main():
     # Создаём объект updater.
     # Вместо слова "TOKEN" надо разместить полученный от @BotFather токен
-    updater = Updater(TOKEN, use_context=True)
+    updater = Updater('1179762979:AAGtC1BRYZhZ81cBz5bHeYO4oqvRDYEO5Fc', use_context=True)
 
     # Получаем из него диспетчер сообщений.
     dp = updater.dispatcher
@@ -278,6 +299,11 @@ def main():
     # Регистрируем обработчик в диспетчере.
     text_handler = MessageHandler(Filters.text, send_message)
     dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("how_much_time", how_much_time))
+    dp.add_handler(CommandHandler("start_new_timer", start_new_timer,
+                                  pass_args=True,
+                                  pass_job_queue=True,
+                                  pass_chat_data=True))
     dp.add_handler(text_handler)
 
     updater.start_polling()
