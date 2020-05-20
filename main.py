@@ -4,10 +4,11 @@ from token_t_bot import TOKEN
 from register_func import check_name, check_password, register_flag, add_user, change_game_code, \
     check_Admin, change_Admin, check_register, close_register, open_register, check_game_code
 from telegram import ReplyKeyboardMarkup
-import time
+import datetime
 import asyncio
 
 TIME = 0
+FLAG = False
 
 main_kb_user = [["Остаток рыб", "Остаток времени", "Мои рыбы"],
                 ["Регистрация", "Рыбалка"]]
@@ -80,42 +81,42 @@ def stop_game():
     pass
 
 
-async def start_new_timer(update, context):
-    """Добавляем задачу в очередь"""
+def start_new_timer(update, context):
+    global TIME, FLAG
     chat_id = update.message.chat_id
-    due = 10
-
+    due = 120
+    TIME = 0
+    TIME = [int(x) for x in str(datetime.datetime.now()).split(' ')[1].split('.')[0].split(':')][1::]
+    TIME = TIME[0] * 60 + TIME[1]
+    print(TIME)
     if 'job' in context.chat_data:
         old_job = context.chat_data['job']
         old_job.schedule_removal()
     new_job = context.job_queue.run_once(task, due, context=chat_id)
     context.chat_data['job'] = new_job
     update.message.reply_text('Раунд начался. У игроков есть две минуты.')
-    await asyncio.gather(user_timer(update, due))
+    FLAG = True
 
 
 def task(context):
+    global FLAG
     job = context.job
     context.bot.send_message(job.context, text='Вернулся!')
-
-
-async def user_timer(update, sec):
-    global TIME
-    TIME = sec
-    update.message.reply_text('Раунд начался. У игроков есть две минуты.')
-    for i in range(sec):
-        TIME = sec
-        sec -= 1
-        if sec == 5:
-            update.message.reply_text('Осталась одна минута.')
-        time.sleep(1)
-    update.message.reply_text('Раунд закончился.')
+    FLAG = False
 
 
 def how_much_time(update, context):
-    global TIME
-    update.message.reply_text(f'Осталось {TIME} секунд')
-    return 1
+    global TIME, FLAG
+    if FLAG:
+        ost_time = [int(x) for x in str(datetime.datetime.now()).split(' ')[1].split('.')[0].split(':')][1::]
+        ost_time = ost_time[0] * 60 + ost_time[1]
+        ost_time -= TIME
+        ost_time = 120 - ost_time
+        if ost_time <= 0:
+            return 1
+        else:
+            update.message.reply_text(f'Осталось {ost_time} секунд')
+            return 1
 
 
 def log_conduct():
@@ -181,7 +182,7 @@ def start(update, context):
     if check_Admin(update.message.chat.id):
         update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_admin)
     else:
-        update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_admin)
+        update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_user)
 
 
 def register(update, context):
@@ -268,7 +269,7 @@ def stop(update, context):
 def main():
     # Создаём объект updater.
     # Вместо слова "TOKEN" надо разместить полученный от @BotFather токен
-    updater = Updater('1179762979:AAGtC1BRYZhZ81cBz5bHeYO4oqvRDYEO5Fc', use_context=True)
+    updater = Updater(TOKEN, use_context=True)
 
     # Получаем из него диспетчер сообщений.
     dp = updater.dispatcher
