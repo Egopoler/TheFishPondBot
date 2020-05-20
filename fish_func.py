@@ -1,6 +1,8 @@
 import db_session
 from users import User
 
+fish_flag = False
+
 
 def breeding(number_of_fish):
     number_of_fish += number_of_fish // 2
@@ -29,7 +31,6 @@ def check_fish(name, db="TheFishPondBot.sqlite"):
     session = db_session.create_session()
     user = session.query(User).filter(User.name == name).first()
     return user.fish
-
 
 
 def get_fish(name, fish, db="TheFishPondBot.sqlite"):
@@ -68,3 +69,51 @@ def caught_in_round(user_id_, caught_, db="TheFishPondBot.sqlite"):
     user = session.query(User).filter(User.user_id == user_id_).first()
     user.caught = caught_
     session.commit()
+
+
+def fish_flag_open():
+    global fish_flag
+    fish_flag = True
+
+
+def fish_flag_close():
+    global fish_flag
+    fish_flag = False
+
+
+def fish_flag_check():
+    global fish_flag
+    return fish_flag
+
+
+def caught_check(id, db="TheFishPondBot.sqlite"):
+    db_session.global_init(db)
+
+    session = db_session.create_session()
+    caught = session.query(User.caught).filter(User.user_id == id).first()[0]
+    return caught
+
+
+def get_caught_from_db(names_list, db="TheFishPondBot.sqlite"):
+    list_return = []
+    db_session.global_init(db)
+    session = db_session.create_session()
+    for name in names_list:
+        caught = session.query(User.caught).filter(User.name == name).first()[0]
+        code = session.query(User.game).filter(User.name == name).first()[0]
+        if code is None:
+            caught = '-'
+        if caught is None:
+            caught = 0
+        list_return.append(caught)
+    return list_return
+
+
+def erease_caught(names_list, db="TheFishPondBot.sqlite"):
+    db_session.global_init(db)
+    session = db_session.create_session()
+    for name in names_list:
+        user = session.query(User).filter(User.name == name).first()
+        user.caught = None
+    session.commit()
+
