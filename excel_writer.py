@@ -1,7 +1,7 @@
 import xlsxwriter
 from register_func import get_name_playing
 
-workbook = xlsxwriter.Workbook("qwee1.xlsx")
+workbook = xlsxwriter.Workbook("game_table.xlsx")
 worksheet = workbook.add_worksheet()
 round_game = 1
 fish_pond = []
@@ -59,3 +59,19 @@ def del_fishes(amount):
 def change_fish_pond_now():
     global fish_pond_now
     fish_pond_now = fish_pond[-1]
+
+
+def return_round():
+    return round_game
+
+
+def check_fish_pond_now():
+    """
+    Проверяет количество рыбы для окончания игры
+    :return: bool
+    """
+    global fish_pond_now
+    if fish_pond_now == 0:
+        return True
+    return False
+

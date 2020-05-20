@@ -1,5 +1,6 @@
 import db_session
 from users import User
+from random import choice
 
 fish_flag = False
 
@@ -116,4 +117,8 @@ def erease_caught(names_list, db="TheFishPondBot.sqlite"):
         user = session.query(User).filter(User.name == name).first()
         user.caught = None
     session.commit()
+
+
+def money():
+    return choice(("Орёл", "Решка"))
 

@@ -142,3 +142,13 @@ def get_name_for_id(user_id_, db="TheFishPondBot.sqlite"):
     session = db_session.create_session()
     name = session.query(User.name).filter(User.user_id == user_id_).first()[0]
     return name
+
+
+def clear_game(db="TheFishPondBot.sqlite"):
+    db_session.global_init(db)
+    session = db_session.create_session()
+    for user in session.query(User).filter(User.name != "Admin"):
+        session.delete(user)
+    admin = session.query(User).filter(User.name == "Admin").first()
+    admin.game = None
+    session.commit()

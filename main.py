@@ -4,10 +4,11 @@ from telegram.ext import CallbackContext, CommandHandler, ConversationHandler
 import excel_writer
 from token_t_bot import TOKEN
 from register_func import check_name, check_password, register_flag, add_user, change_game_code, get_name_for_id, \
-    check_Admin, change_Admin, check_register, close_register, open_register, check_game_code, get_ids_playing
+    check_Admin, change_Admin, check_register, close_register, open_register, check_game_code, get_ids_playing, \
+    clear_game
 from telegram import ReplyKeyboardMarkup
 from excel_writer import create_table, save_data, fish_pond, fish_pond_now, get_fishes, del_fishes, \
-    change_fish_pond_now, edit_fish_pond
+    change_fish_pond_now, edit_fish_pond, return_round
 from fish_func import get_fish, del_fish, check_fish, check_life, breeding, caught_all_in_round, caught_in_round, \
     fish_flag_check, caught_check, fish_flag_open, get_caught_from_db, erease_caught, fish_flag_close
 
@@ -69,7 +70,7 @@ user_table_list = []
 
 
 def how_much_fish_in_pond(update, context):
-    if update.message.chat.id in get_ids_playing():
+    if update.message.chat.id in get_ids_playing() or check_Admin(update.message.chat.id):
         fishes = get_fishes()
         update.message.reply_text(fishes)
 
@@ -120,8 +121,15 @@ def fishing1(update, context):
         update.message.reply_text("Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду")
 
 
-def stop_game():
-    pass
+def stop_game(update, context):
+    if check_Admin(update.message.chat.id):
+        print(1)
+        excel_writer.close_table()
+        doc = open("game_table.xlsx", "rb")
+        context.bot.send_document(update.message.chat.id, doc)
+        close_register()
+        fish_flag_close()
+        clear_game()
 
 
 def start_new_timer(update, context):
@@ -147,7 +155,7 @@ def fake_task(update, context):
     save_data(get_caught_from_db(user_table_list), all_fish)
     print('yes')
     fish_flag_close()
-    excel_writer.close_table()
+    #  excel_writer.close_table()
     erease_caught(user_table_list)
     for name in user_table_list:
         del_fish(name)
@@ -156,19 +164,48 @@ def fake_task(update, context):
 
 
 def rounds(update, context):
-    fishes = get_fishes()
-    fishes = breeding(fishes)
-    edit_fish_pond(fishes)
-    change_fish_pond_now()
-    fish_flag_open()
+    global user_table_list
+    if check_Admin(update.message.chat.id):
+        fishes = get_fishes()
+        fishes = breeding(fishes)
+        edit_fish_pond(fishes)
+        change_fish_pond_now()
+        fish_flag_open()
+        ids = get_ids_playing()
+        for id in ids:
+            context.bot.send_message(id, text=f'Начался {return_round()} раунд! в пруду {fishes} рыб')
+    else:
+        update.message.reply_text("Только Администратор может пользоваться данной командой")
+        return ConversationHandler.END
 
 
 def log_conduct():
     pass
 
 
-def how_much_fish_in_round():
-    pass
+def how_much_fish_in_round(update, context):
+    if check_Admin(update.message.chat.id):
+        update.message.reply_text("""Напишите номер раунда в котором вы хотите узнать количество рыб.
+Если вы хотите прервать диалог напишите Стоп.""")
+        return 1
+    else:
+        update.message.reply_text("Только Администратор может пользоваться данной командой")
+        return ConversationHandler.END
+
+
+def how_much_fish_in_round1(update, context):
+    if update.message.text.lower() == "стоп":
+        update.message.reply_text("Вы прервали диалог")
+        return ConversationHandler.END
+    try:
+        round_ = int(update.message.text)
+        if round_ <= return_round():
+            update.message.reply_text(excel_writer.get_fishes_start()[round_ - 1])
+        else:
+            update.message.reply_text("По данному раунду нет информации")
+    except Exception:
+        update.message.reply_text("""Напишите номер раунда в котором вы хотите узнать количество рыб.
+Если вы хотите прервать диалог напишите Стоп.""")
 
 
 def send_message(update, context):
@@ -264,7 +301,7 @@ def register2(update, context):
     if return_check_name == 1:
         if check_password(update.message.text):
             change_Admin(update.message.chat.id)
-            update.message.reply_text("Вы получили права Администратора")
+            update.message.reply_text("Вы получили права Администратора", reply_markup=markup_main_kb_admin)
             return ConversationHandler.END
 
     elif return_check_name == 0:
@@ -272,7 +309,8 @@ def register2(update, context):
             if check_game_code(update.message.text):
                 add_user(context.user_data["name"], update.message.text, int(update.message.chat.id))
                 change_game_code(update.message.text, context.user_data["name"])
-                update.message.reply_text("Вы успешно зашли под именем {}".format(context.user_data["name"]))
+                update.message.reply_text("Вы успешно зашли под именем {}".format(context.user_data["name"]),
+                                          reply_markup=markup_main_kb_user)
                 return ConversationHandler.END
             else:
                 update.message.reply_text("""Вы ввели неправильный код, попробуйте еще раз.
@@ -312,7 +350,7 @@ def first_round(update, context):
     if check_Admin(update.message.chat.id):
         close_register()
         ids = get_ids_playing()
-        user_table_list = create_table("game.xlsx")
+        user_table_list = create_table("game_table.xlsx")
         fishes = get_fishes()
         fish_flag_open()
         for id in ids:
@@ -341,7 +379,14 @@ def main():
     # После регистрации обработчика в диспетчере
     # эта функция будет вызываться при получении сообщения
     # с типом "текст", т. е. текстовых сообщений.
-    start_game_handler = ConversationHandler(
+    fish_in_rounds_handler = ConversationHandler(
+        entry_points=[CommandHandler('how_much_fish_in_round', how_much_fish_in_round)],
+        states={
+            1: [MessageHandler(Filters.text, how_much_fish_in_round1, pass_user_data=True)]
+        },
+        fallbacks=[CommandHandler('stop', stop)]
+    )
+    register_handler = ConversationHandler(
         entry_points=[CommandHandler('register', register)],
         states={
             1: [MessageHandler(Filters.text, register1, pass_user_data=True)],
@@ -349,7 +394,7 @@ def main():
         },
         fallbacks=[CommandHandler('stop', stop)]
     )
-    register_handler = ConversationHandler(
+    start_game_handler = ConversationHandler(
         entry_points=[CommandHandler('start_game', start_game)],
         states={
             1: [MessageHandler(Filters.text, start_game1)]
@@ -365,12 +410,15 @@ def main():
     )
     hand = CommandHandler('game', first_round)
     fake_hand = CommandHandler('fake_task', fake_task)
+    dp.add_handler(fish_in_rounds_handler)
     dp.add_handler(fake_hand)
     dp.add_handler(hand)
     dp.add_handler(fishing_handler)
     dp.add_handler(register_handler)
     dp.add_handler(start_game_handler)
     dp.add_handler(CommandHandler("how_much_fish_in_pond", how_much_fish_in_pond))
+    dp.add_handler(CommandHandler("stop_game", stop_game))
+    dp.add_handler(CommandHandler("rounds", rounds))
     # Регистрируем обработчик в диспетчере.
     text_handler = MessageHandler(Filters.text, send_message)
     dp.add_handler(CommandHandler("start", start))
