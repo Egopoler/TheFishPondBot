@@ -218,7 +218,7 @@ def register2(update, context):
 def start_game(update, context):
     if check_Admin(update.message.chat.id):
         update.message.reply_text("""Введите код, который позволит пользователям присоединиться к игре.
-    Если вы хотите прервать диалог напишите Стоп.""")
+    Если вы хотите прервать диалог напишите Стоп""")
         return 1
     else:
         update.message.reply_text("Только Администратор может пользоваться данной командой")
