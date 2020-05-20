@@ -1,10 +1,11 @@
 from telegram.ext import Updater, MessageHandler, Filters
 from telegram.ext import CallbackContext, CommandHandler, ConversationHandler
 from token_t_bot import TOKEN
-from register_func import check_name, check_password, register_flag, add_user, change_game_code, \
+from register_func import check_name, check_password, register_flag, add_user, change_game_code, get_name_for_id, \
     check_Admin, change_Admin, check_register, close_register, open_register, check_game_code, get_ids_playing
 from telegram import ReplyKeyboardMarkup
-from excel_writer import create_table, save_data
+from excel_writer import create_table, save_data, fish_pond, fish_pond_now
+from fish_func import get_fish, del_fish, check_fish, check_life, breeding, caught_all_in_round, caught_in_round
 
 main_kb_user = [["Остаток рыб", "Остаток времени", "Мои рыбы"],
                 ["Регистрация", "Рыбалка"]]
@@ -61,20 +62,48 @@ markup_hmfip_kb_admin = ReplyKeyboardMarkup(hmfip_kb_admin, one_time_keyboard=Fa
 markup_hmfir_kb_admin = ReplyKeyboardMarkup(hmfir_kb_admin, one_time_keyboard=False)
 
 
-def how_much_fish_in_pond():
-    pass
+def how_much_fish_in_pond(update, context):
+    update.message.reply_text(fish_pond_now)
 
 
 def how_much_time():
     pass
 
 
-def my_fish():
-    pass
+def my_fish(update, context):
+    if update.message.chat.id in get_ids_playing():
+        name = get_name_for_id(update.message.chat.id)
+        update.message.reply_text(check_fish(name))
 
 
-def fishing():
-    pass
+def fishing(update, context):
+    if update.message.chat.id in get_ids_playing():
+        update.message.reply_text("""Напишите количество рыб, которое вы хотите поймать от 0 до 3.
+Вы не можете поймать больше рыбы, чем есть в пруду.
+Если вы хотите прервать диалог напишите Стоп. """)
+        return 1
+    else:
+        return ConversationHandler.END
+
+
+def fishing1(update, context):
+    global fish_pond_now
+    if update.message.text.lower() == "стоп":
+        update.message.reply_text("Вы прервали диалог")
+        return ConversationHandler.END
+    try:
+        fish = int(update.message.text)
+        name = get_name_for_id(update.message.chat.id)
+        if fish <= 3 and fish >= 0 and fish <= fish_pond_now:
+            get_fish(name, fish)
+            caught_in_round(update.message.chat.id, fish)
+            fish_pond_now -= fish
+            print(fish_pond_now)
+            return ConversationHandler.END
+        else:
+            update.message.reply_text("Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду")
+    except Exception:
+        update.message.reply_text("Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду")
 
 
 def stop_game():
@@ -286,14 +315,23 @@ def main():
         },
         fallbacks=[CommandHandler('stop', stop)]
     )
+    fishing_handler = ConversationHandler(
+        entry_points=[CommandHandler('fishing', fishing)],
+        states={
+            1: [MessageHandler(Filters.text, fishing1)]
+        },
+        fallbacks=[CommandHandler('stop', stop)]
+    )
     hand = CommandHandler('first_round', first_round)
     dp.add_handler(hand)
+    dp.add_handler(fishing_handler)
     dp.add_handler(register_handler)
     dp.add_handler(start_game_handler)
 
     # Регистрируем обработчик в диспетчере.
     text_handler = MessageHandler(Filters.text, send_message)
     dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("my_fish", my_fish))
     dp.add_handler(text_handler)
 
     updater.start_polling()

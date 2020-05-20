@@ -103,12 +103,13 @@ def change_game_code(code, user_name, db="TheFishPondBot.sqlite"):
 
 def add_user(name, game, user_id_, db="TheFishPondBot.sqlite"):
     """Добавляет пользователя"""
+    db_session.global_init(db)
+    session = db_session.create_session()
     user = User()
     user.name = name
     user.game = game
     user.user_id = user_id_
-    db_session.global_init(db)
-    session = db_session.create_session()
+    user.fish = 1  # Кол-во рыбы по умолчанию
     session.add(user)
     session.commit()
 
@@ -135,3 +136,9 @@ def get_ids_playing(db="TheFishPondBot.sqlite"):
             lst_of_ids.append(user.user_id)
     return lst_of_ids
 
+
+def get_name_for_id(user_id_, db="TheFishPondBot.sqlite"):
+    db_session.global_init(db)
+    session = db_session.create_session()
+    name = session.query(User.name).filter(User.user_id == user_id_).first()[0]
+    return name
