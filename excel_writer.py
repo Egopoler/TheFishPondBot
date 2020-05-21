@@ -15,7 +15,7 @@ def create_table(table_name):
     round_game = 1
     data = ['Игрок'] + get_name_playing() + ['Пруд']
     fish_pond = []
-    fish_pond.append(len(get_name_playing()) + 4)
+    fish_pond.append(len(get_name_playing()) * 3)
     print(fish_pond[-1])
     fish_pond_now = fish_pond[-1]
     for row, name_user in enumerate(data):
