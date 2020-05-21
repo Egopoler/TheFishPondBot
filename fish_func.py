@@ -105,7 +105,7 @@ def get_caught_from_db(names_list, db="TheFishPondBot.sqlite"):
         code = session.query(User.game).filter(User.name == name).first()[0]
         if code is None:
             caught = '-'
-        if caught is None:
+        elif caught is None:
             caught = 0
             add_line(f"{name} прогулял рыбалку и получил 0 рыб")
         list_return.append(caught)

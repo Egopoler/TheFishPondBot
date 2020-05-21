@@ -149,7 +149,7 @@ def get_name_for_id(user_id_, db="TheFishPondBot.sqlite"):
 def get_id_for_name(user_name_, db="TheFishPondBot.sqlite"):
     db_session.global_init(db)
     session = db_session.create_session()
-    id = session.query(User.user_id).filter(User.user_name_ == user_name_).first()[0]
+    id = session.query(User.user_id).filter(User.name == user_name_).first()[0]
     return id
 
 

@@ -48,7 +48,6 @@ def get_fishes_start():
 
 def edit_fish_pond(fish):
     global fish_pond
-    print(100)
     fish_pond.append(fish)
 
 

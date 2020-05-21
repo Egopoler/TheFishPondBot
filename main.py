@@ -125,7 +125,6 @@ def fishing1(update, context):
 
 def stop_game(update, context):
     if check_Admin(update.message.chat.id):
-        print(1)
         excel_writer.close_table()
         doc = open("game_table.xlsx", "rb")
         context.bot.send_document(update.message.chat.id, doc)
@@ -134,14 +133,14 @@ def stop_game(update, context):
         clear_game()
         ids = get_ids_playing()
         for id in ids:
-            context.bot.send_message(id, text='Игра закончилась. Рыб не осталось!')
+            context.bot.send_message(id, text='Игра закончилась по желанию Администратора!')
 
 
 def start_new_timer(update, context):
     global TIME, FLAG
     chat_id = update.message.chat_id
-    due = 60
-    due1 = 120
+    due = 10
+    due1 = 20
     TIME = 0
     TIME = [int(x) for x in str(datetime.datetime.now()).split(' ')[1].split('.')[0].split(':')][1::]
     TIME = TIME[0] * 60 + TIME[1]
@@ -152,22 +151,26 @@ def start_new_timer(update, context):
     context.chat_data['job'] = new_job
     new_job1 = context.job_queue.run_once(task1, due1, context=chat_id)
     context.chat_data['job1'] = new_job1
-    update.message.reply_text('Раунд начался. У игроков есть две минуты.')
+    ids = get_ids_playing()
+    for id in ids:
+        context.bot.send_message(id, text='Раунд начался. У игроков есть две минуты.')
     FLAG = True
 
 
 def task(context):
     global FLAG
     job = context.job
-    context.bot.send_message(job.context, text='Осталась 1 минута!')
-    all_fish = excel_writer.get_fishes_start()[-1]
-    save_data(user_table_list, all_fish)
+    ids = get_ids_playing()
+    for id in ids:
+        context.bot.send_message(id, text='Осталась 1 минута!')
 
 
 def task1(context):
     global FLAG
     job = context.job
-    context.bot.send_message(job.context, text='Раунд закончен!')
+    ids = get_ids_playing()
+    for id in ids:
+        context.bot.send_message(id, text='Раунд закончен!')
     FLAG = False
     all_fish = excel_writer.get_fishes_start()[-1]
     save_data(get_caught_from_db(user_table_list), all_fish)
@@ -180,7 +183,8 @@ def task1(context):
         if not check_life(name):
             change_game_code(None, name)
             add_line(f"{name} умер")
-    if excel_writer.check_fish_pond_now:
+            context.bot.send_message(get_id_for_name(name), text='Вы умерли от голода :(')
+    if excel_writer.check_fish_pond_now():
         ids = get_ids_playing()
         for id in ids:
             context.bot.send_message(id, text='Игра закончилась. Рыб не осталось!')
@@ -204,30 +208,6 @@ def how_much_time(update, context):
         else:
             update.message.reply_text(f'Осталось {ost_time} секунд')
             return 1
-
-
-def fake_task(update, context):
-    all_fish = excel_writer.get_fishes_start()[-1]
-    save_data(get_caught_from_db(user_table_list), all_fish)
-    print('yes')
-    fish_flag_close()
-    #  excel_writer.close_table()
-    erease_caught(user_table_list)
-    for name in user_table_list:
-        del_fish(name)
-        if not check_life(name):
-            change_game_code(None, name)
-            add_line(f"{name} умер")
-    if excel_writer.check_fish_pond_now:
-        ids = get_ids_playing()
-        for id in ids:
-            context.bot.send_message(id, text='Игра закончилась. Рыб не осталось!')
-        excel_writer.close_table()
-        doc = open("game_table.xlsx", "rb")
-        context.bot.send_document(update.message.chat.id, doc)
-        close_register()
-        fish_flag_close()
-        clear_game()
 
 
 def rounds(update, context):
@@ -303,7 +283,7 @@ def send_message(update, context):
     elif update.message.text == "Ловить рыбу":
         update.message.reply_text("Сколько рыб вы хотите поймать???", reply_markup=markup_f_kb_user)
     elif update.message.text == "Назад":
-        update.message.reply_text("вас перенесло в главное меню", reply_markup=markup_main_kb_user)
+        update.message.reply_text("Вас перенесло в главное меню", reply_markup=markup_main_kb_user)
     elif update.message.text.lower() == "привет":
         update.message.reply_text("Привет, друг! Давай поиграем!")
     elif update.message.text == "Игра":
@@ -481,9 +461,7 @@ def main():
         fallbacks=[CommandHandler('stop', stop)]
     )
     hand = CommandHandler('game', first_round)
-    fake_hand = CommandHandler('fake_task', fake_task)
     dp.add_handler(fish_in_rounds_handler)
-    dp.add_handler(fake_hand)
     dp.add_handler(hand)
     dp.add_handler(fishing_handler)
     dp.add_handler(register_handler)
