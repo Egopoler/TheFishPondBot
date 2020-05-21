@@ -83,21 +83,30 @@ def stop_game():
 def start_new_timer(update, context):
     global TIME, FLAG
     chat_id = update.message.chat_id
-    due = 12
+    due = 60
+    due1 = 120
     TIME = 0
     TIME = [int(x) for x in str(datetime.datetime.now()).split(' ')[1].split('.')[0].split(':')][1::]
     TIME = TIME[0] * 60 + TIME[1]
-    print(TIME)
     if 'job' in context.chat_data:
         old_job = context.chat_data['job']
         old_job.schedule_removal()
     new_job = context.job_queue.run_once(task, due, context=chat_id)
     context.chat_data['job'] = new_job
+    new_job1 = context.job_queue.run_once(task1, due1, context=chat_id)
+    context.chat_data['job1'] = new_job1
     update.message.reply_text('Раунд начался. У игроков есть две минуты.')
     FLAG = True
 
 
 def task(context):
+    global FLAG
+    job = context.job
+    context.bot.send_message(job.context, text='Осталась 1 минута!')
+    FLAG = False
+
+
+def task1(context):
     global FLAG
     job = context.job
     context.bot.send_message(job.context, text='Раунд закончен!')
@@ -181,7 +190,7 @@ def start(update, context):
     if check_Admin(update.message.chat.id):
         update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_admin)
     else:
-        update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_user)
+        update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_admin)
 
 
 def register(update, context):
@@ -266,18 +275,10 @@ def stop(update, context):
 
 
 def main():
-    # Создаём объект updater.
-    # Вместо слова "TOKEN" надо разместить полученный от @BotFather токен
     updater = Updater(TOKEN, use_context=True)
 
-    # Получаем из него диспетчер сообщений.
     dp = updater.dispatcher
 
-    # Создаём обработчик сообщений типа Filters.text
-    # из описанной выше функции echo()
-    # После регистрации обработчика в диспетчере
-    # эта функция будет вызываться при получении сообщения
-    # с типом "текст", т. е. текстовых сообщений.
     start_game_handler = ConversationHandler(
         entry_points=[CommandHandler('register', register)],
         states={
@@ -296,7 +297,6 @@ def main():
     dp.add_handler(register_handler)
     dp.add_handler(start_game_handler)
 
-    # Регистрируем обработчик в диспетчере.
     text_handler = MessageHandler(Filters.text, send_message)
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("how_much_time", how_much_time))
