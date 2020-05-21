@@ -132,6 +132,9 @@ def stop_game(update, context):
         close_register()
         fish_flag_close()
         clear_game()
+        ids = get_ids_playing()
+        for id in ids:
+            context.bot.send_message(id, text='Игра закончилась. Рыб не осталось!')
 
 
 def start_new_timer(update, context):
@@ -164,6 +167,16 @@ def fake_task(update, context):
         if not check_life(name):
             change_game_code(None, name)
             add_line(f"{name} умер")
+    if excel_writer.check_fish_pond_now:
+        ids = get_ids_playing()
+        for id in ids:
+            context.bot.send_message(id, text='Игра закончилась. Рыб не осталось!')
+        excel_writer.close_table()
+        doc = open("game_table.xlsx", "rb")
+        context.bot.send_document(update.message.chat.id, doc)
+        close_register()
+        fish_flag_close()
+        clear_game()
 
 
 def rounds(update, context):
