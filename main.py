@@ -90,9 +90,15 @@ def my_fish(update, context):
 
 def fishing(update, context):
     if update.message.chat.id in get_ids_playing():
-        update.message.reply_text("""Напишите количество рыб, которое вы хотите поймать от 0 до 3.
-Вы не можете поймать больше рыбы, чем есть в пруду.
+        fish_pond_now = get_fishes()
+        if fish_pond_now == 0:
+            update.message.reply_text("""Напишите количество рыб, которое вы хотите поймать от 0 до 3.
+Вы не можете поймать больше рыбы, чем есть в пруду. Сейчас в пруду нет рыбы
 Если вы хотите прервать диалог напишите Стоп. """)
+        else:
+            update.message.reply_text("""Напишите количество рыб, которое вы хотите поймать от 0 до 3.
+            Вы не можете поймать больше рыбы, чем есть в пруду.
+            Если вы хотите прервать диалог напишите Стоп. """)
         return 1
     else:
         return ConversationHandler.END
@@ -119,9 +125,22 @@ def fishing1(update, context):
             add_line(f"{name} поймал {fish} рыб")
             return ConversationHandler.END
         else:
-            update.message.reply_text("Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду")
+            if fish_pond_now == 0:
+                update.message.reply_text(
+                    """Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду.
+Сейчас нет рыб в пруду""")
+            else:
+                update.message.reply_text(
+                    "Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду")
+            return ConversationHandler.END
     except Exception:
-        update.message.reply_text("Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду")
+        if fish_pond_now == 0:
+            update.message.reply_text(
+                "Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду. Сейчас нет рыб в пруду")
+        else:
+            update.message.reply_text(
+                "Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду")
+        return ConversationHandler.END
 
 
 def stop_game(update, context):
@@ -139,23 +158,27 @@ def stop_game(update, context):
 
 def start_new_timer(update, context):
     global TIME, FLAG
-    chat_id = update.message.chat_id
-    due = 60
-    due1 = 120
-    TIME = 0
-    TIME = [int(x) for x in str(datetime.datetime.now()).split(' ')[1].split('.')[0].split(':')][1::]
-    TIME = TIME[0] * 60 + TIME[1]
-    if 'job' in context.chat_data:
-        old_job = context.chat_data['job']
-        old_job.schedule_removal()
-    new_job = context.job_queue.run_once(task, due, context=chat_id)
-    context.chat_data['job'] = new_job
-    new_job1 = context.job_queue.run_once(task1, due1, context=chat_id)
-    context.chat_data['job1'] = new_job1
-    ids = get_ids_playing()
-    for id in ids:
-        context.bot.send_message(id, text='Раунд начался. У игроков есть две минуты.')
-    FLAG = True
+    if check_Admin(update.message.chat.id):
+        chat_id = update.message.chat_id
+        due = 60
+        due1 = 120
+        TIME = 0
+        TIME = [int(x) for x in str(datetime.datetime.now()).split(' ')[1].split('.')[0].split(':')][1::]
+        TIME = TIME[0] * 60 + TIME[1]
+        if 'job' in context.chat_data:
+            old_job = context.chat_data['job']
+            old_job.schedule_removal()
+        new_job = context.job_queue.run_once(task, due, context=chat_id)
+        context.chat_data['job'] = new_job
+        new_job1 = context.job_queue.run_once(task1, due1, context=chat_id)
+        context.chat_data['job1'] = new_job1
+        ids = get_ids_playing()
+        for id in ids:
+            context.bot.send_message(id, text='Раунд начался. У игроков есть две минуты.')
+        FLAG = True
+    else:
+        update.message.reply_text("Только Администратор может пользоваться данной командой")
+        return ConversationHandler.END
 
 
 def task(context):
@@ -286,7 +309,7 @@ def send_message(update, context):
     elif update.message.text == "Рыбалка":
         update.message.reply_text("Тут можно ловить рыбку", reply_markup=markup_fishing_kb_user)
     elif update.message.text == "Ловить рыбу":
-        update.message.reply_text("Сколько рыб вы хотите поймать???", reply_markup=markup_f_kb_user)
+        update.message.reply_text("Нажмите на /fishing , чтобы начать ловить рыбу ", reply_markup=markup_f_kb_user)
     elif update.message.text == "Назад":
         update.message.reply_text("Вас перенесло в главное меню", reply_markup=markup_main_kb_user)
     elif update.message.text.lower() == "привет":
