@@ -11,6 +11,7 @@ from excel_writer import create_table, save_data, fish_pond, fish_pond_now, get_
     change_fish_pond_now, edit_fish_pond, return_round
 from fish_func import get_fish, del_fish, check_fish, check_life, breeding, caught_all_in_round, caught_in_round, \
     fish_flag_check, caught_check, fish_flag_open, get_caught_from_db, erease_caught, fish_flag_close
+from log_in_game import create_log_file, add_line
 
 main_kb_user = [["Остаток рыб", "Остаток времени", "Мои рыбы"],
                 ["Регистрация", "Рыбалка"]]
@@ -114,6 +115,7 @@ def fishing1(update, context):
             del_fishes(fish)
             print(fish_pond_now)
             update.message.reply_text(f'Вы поймали {fish} рыбы')
+            add_line(f"{name} поймал {fish} рыб")
             return ConversationHandler.END
         else:
             update.message.reply_text("Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду")
@@ -161,6 +163,7 @@ def fake_task(update, context):
         del_fish(name)
         if not check_life(name):
             change_game_code(None, name)
+            add_line(f"{name} умер")
 
 
 def rounds(update, context):
@@ -172,6 +175,7 @@ def rounds(update, context):
         change_fish_pond_now()
         fish_flag_open()
         ids = get_ids_playing()
+        add_line(f"{return_round()} Раунд")
         for id in ids:
             context.bot.send_message(id, text=f'Начался {return_round()} раунд! в пруду {fishes} рыб')
     else:
@@ -179,8 +183,9 @@ def rounds(update, context):
         return ConversationHandler.END
 
 
-def log_conduct():
-    pass
+def log_conduct(update, context):
+    doc = open("log.txt", "rb")
+    context.bot.send_document(update.message.chat.id, doc)
 
 
 def how_much_fish_in_round(update, context):
@@ -201,8 +206,10 @@ def how_much_fish_in_round1(update, context):
         round_ = int(update.message.text)
         if round_ <= return_round():
             update.message.reply_text(excel_writer.get_fishes_start()[round_ - 1])
+            return ConversationHandler.END
         else:
             update.message.reply_text("По данному раунду нет информации")
+            return ConversationHandler.END
     except Exception:
         update.message.reply_text("""Напишите номер раунда в котором вы хотите узнать количество рыб.
 Если вы хотите прервать диалог напишите Стоп.""")
@@ -276,7 +283,7 @@ def register1(update, context):
     if update.message.text.lower() == "стоп":
         update.message.reply_text("Вы прервали диалог")
         return ConversationHandler.END
-    return_check_name = check_name(update.message.text)
+    return_check_name = check_name(update.message.text, update.message.chat.id)
     if return_check_name == 1:
         update.message.reply_text("""Вы заходите под именем Администратра, напишите пароль.
     Если вы хотите прервать диалог напишите Стоп.""")
@@ -285,6 +292,8 @@ def register1(update, context):
     elif return_check_name == 2:
         update.message.reply_text("""Имя пользователя уже занято, введите другое.
     Если вы хотите прервать диалог напишите Стоп.""")
+    elif return_check_name == 3:
+        update.message.reply_text("""Вы уже зарегистрированы""")
     elif return_check_name == 0:
         context.user_data['return_check_name'] = return_check_name
         context.user_data["name"] = update.message.text
@@ -353,6 +362,8 @@ def first_round(update, context):
         user_table_list = create_table("game_table.xlsx")
         fishes = get_fishes()
         fish_flag_open()
+        create_log_file()
+        add_line("1 Раунд")
         for id in ids:
             context.bot.send_message(id, text=f'Начался первый раунд! в пруду {fishes} рыб')
 
@@ -423,6 +434,7 @@ def main():
     text_handler = MessageHandler(Filters.text, send_message)
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("my_fish", my_fish))
+    dp.add_handler(CommandHandler("log_conduct", log_conduct))
     dp.add_handler(text_handler)
 
     updater.start_polling()

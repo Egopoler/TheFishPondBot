@@ -1,6 +1,7 @@
 import db_session
 from users import User
 from random import choice
+from log_in_game import add_line
 
 fish_flag = False
 
@@ -106,6 +107,7 @@ def get_caught_from_db(names_list, db="TheFishPondBot.sqlite"):
             caught = '-'
         if caught is None:
             caught = 0
+            add_line(f"{name} прогулял рыбалку и получил 0 рыб")
         list_return.append(caught)
     return list_return
 

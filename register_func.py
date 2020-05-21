@@ -4,7 +4,7 @@ from users import User
 register_flag = False
 
 
-def check_name(name, db="TheFishPondBot.sqlite"):
+def check_name(name, user_id_, db="TheFishPondBot.sqlite"):
     """
     Функция проверяет на уникальность имя пользователя(name) в таблице
     :param name: Имя пользователя
@@ -17,6 +17,8 @@ def check_name(name, db="TheFishPondBot.sqlite"):
         if user.id == 1:
             return 1  # вход под именем администратора
         return 2  # имя не уникально
+    for user in session.query(User).filter(User.user_id == user_id_):
+        return 3   # игрок уже зарегистрирован
     return 0  # имя уникально
 
 
