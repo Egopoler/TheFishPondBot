@@ -5,7 +5,7 @@ import excel_writer
 from token_t_bot import TOKEN
 from register_func import check_name, check_password, register_flag, add_user, change_game_code, get_name_for_id, \
     check_Admin, change_Admin, check_register, close_register, open_register, check_game_code, get_ids_playing, \
-    clear_game
+    clear_game, get_id_for_name
 from telegram import ReplyKeyboardMarkup
 import datetime
 
@@ -78,10 +78,6 @@ def how_much_fish_in_pond(update, context):
     if update.message.chat.id in get_ids_playing() or check_Admin(update.message.chat.id):
         fishes = get_fishes()
         update.message.reply_text(fishes)
-
-
-def how_much_time():
-    pass
 
 
 def my_fish(update, context):
@@ -166,7 +162,6 @@ def task(context):
     context.bot.send_message(job.context, text='Осталась 1 минута!')
     all_fish = excel_writer.get_fishes_start()[-1]
     save_data(user_table_list, all_fish)
-    FLAG = False
 
 
 def task1(context):
@@ -174,6 +169,27 @@ def task1(context):
     job = context.job
     context.bot.send_message(job.context, text='Раунд закончен!')
     FLAG = False
+    all_fish = excel_writer.get_fishes_start()[-1]
+    save_data(get_caught_from_db(user_table_list), all_fish)
+    print('yes')
+    fish_flag_close()
+    #  excel_writer.close_table()
+    erease_caught(user_table_list)
+    for name in user_table_list:
+        del_fish(name)
+        if not check_life(name):
+            change_game_code(None, name)
+            add_line(f"{name} умер")
+    if excel_writer.check_fish_pond_now:
+        ids = get_ids_playing()
+        for id in ids:
+            context.bot.send_message(id, text='Игра закончилась. Рыб не осталось!')
+        excel_writer.close_table()
+        doc = open("game_table.xlsx", "rb")
+        context.bot.send_document(get_id_for_name('Admin'), doc)
+        close_register()
+        fish_flag_close()
+        clear_game()
 
 
 def how_much_time(update, context):
@@ -188,9 +204,6 @@ def how_much_time(update, context):
         else:
             update.message.reply_text(f'Осталось {ost_time} секунд')
             return 1
-    context.bot.send_message(job.context, text='Дзинь-Дзинь! Раунд закончился!')
-    all_fish = excel_writer.get_fishes_start()[-1]
-    save_data(user_table_list, all_fish)
 
 
 def fake_task(update, context):
@@ -321,7 +334,7 @@ def start(update, context):
     if check_Admin(update.message.chat.id):
         update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_admin)
     else:
-        update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_admin)
+        update.message.reply_text("""Привет! Начнём игру!""", reply_markup=markup_main_kb_user)
 
 
 def register(update, context):

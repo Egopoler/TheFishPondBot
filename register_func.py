@@ -18,7 +18,7 @@ def check_name(name, user_id_, db="TheFishPondBot.sqlite"):
             return 1  # вход под именем администратора
         return 2  # имя не уникально
     for user in session.query(User).filter(User.user_id == user_id_):
-        return 3   # игрок уже зарегистрирован
+        return 3  # игрок уже зарегистрирован
     return 0  # имя уникально
 
 
@@ -144,6 +144,13 @@ def get_name_for_id(user_id_, db="TheFishPondBot.sqlite"):
     session = db_session.create_session()
     name = session.query(User.name).filter(User.user_id == user_id_).first()[0]
     return name
+
+
+def get_id_for_name(user_name_, db="TheFishPondBot.sqlite"):
+    db_session.global_init(db)
+    session = db_session.create_session()
+    id = session.query(User.user_id).filter(User.user_name_ == user_name_).first()[0]
+    return id
 
 
 def clear_game(db="TheFishPondBot.sqlite"):
