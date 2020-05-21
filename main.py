@@ -26,7 +26,7 @@ reg_kb_user = [['Регистрация игрока'], ['Назад']]
 fishing_kb_user = [['Ловить рыбу'], ['Назад']]
 
 main_kb_admin = [["Игра", "Таймер"], ["Статусы"]]
-game_kb_admin = [["Начать", "Остановить"], ["Назад <-"]]
+game_kb_admin = [["Начать регистрацию на игру", "Остановить"], ["Начать новый раунд", "Назад <-"]]
 timer_kb_admin = [["Включить таймер (2 мин)"], ["Назад <-"]]
 statuses_kb_admin = [["Оcтаток времени", "Лог поведения", "Кол-во рыб в пруду"], ["Кол-во рыб в N раунде", "Назад <-"]]
 
@@ -37,6 +37,7 @@ r_kb_user = [["/register", "Назад"]]
 f_kb_user = [['/fishing'], ['Назад']]
 
 sg_kb_admin = [["/start_game", "Назад <-"]]
+g_kb_admin = [["/game", "Назад <-"]]
 stg_kb_admin = [["/stop_game", "Назад <-"]]
 snt_kb_admin = [["/start_new_timer", "Назад <-"]]
 hmt_kb_admin = [["/how_much_time", "Назад <-"]]
@@ -64,6 +65,7 @@ markup_r_kb_user = ReplyKeyboardMarkup(r_kb_user, one_time_keyboard=False)
 markup_f_kb_user = ReplyKeyboardMarkup(f_kb_user, one_time_keyboard=False)
 # admin dop
 markup_sg_kb_admin = ReplyKeyboardMarkup(sg_kb_admin, one_time_keyboard=False)
+markup_g_kb_admin = ReplyKeyboardMarkup(g_kb_admin, one_time_keyboard=False)
 markup_stg_kb_admin = ReplyKeyboardMarkup(stg_kb_admin, one_time_keyboard=False)
 markup_snt_kb_admin = ReplyKeyboardMarkup(snt_kb_admin, one_time_keyboard=False)
 markup_hmt_kb_admin = ReplyKeyboardMarkup(hmt_kb_admin, one_time_keyboard=False)
@@ -113,7 +115,6 @@ def fishing1(update, context):
             get_fish(name, fish)
             caught_in_round(update.message.chat.id, fish)
             del_fishes(fish)
-            print(fish_pond_now)
             update.message.reply_text(f'Вы поймали {fish} рыбы')
             add_line(f"{name} поймал {fish} рыб")
             return ConversationHandler.END
@@ -139,8 +140,8 @@ def stop_game(update, context):
 def start_new_timer(update, context):
     global TIME, FLAG
     chat_id = update.message.chat_id
-    due = 10
-    due1 = 20
+    due = 60
+    due1 = 120
     TIME = 0
     TIME = [int(x) for x in str(datetime.datetime.now()).split(' ')[1].split('.')[0].split(':')][1::]
     TIME = TIME[0] * 60 + TIME[1]
@@ -174,9 +175,7 @@ def task1(context):
     FLAG = False
     all_fish = excel_writer.get_fishes_start()[-1]
     save_data(get_caught_from_db(user_table_list), all_fish)
-    print('yes')
     fish_flag_close()
-    #  excel_writer.close_table()
     erease_caught(user_table_list)
     for name in user_table_list:
         del_fish(name)
@@ -210,16 +209,22 @@ def how_much_time(update, context):
             return 1
 
 
-def rounds(update, context):
+def rounds_and_first_round(update, context):
     global user_table_list
     if check_Admin(update.message.chat.id):
+        update.message.reply_text("Вы начали игру", reply_markup=markup_timer_kb_admin)
+        if return_round() == 1:
+            close_register()
+            user_table_list = create_table("game_table.xlsx")
+            create_log_file()
         fishes = get_fishes()
-        fishes = breeding(fishes)
-        edit_fish_pond(fishes)
-        change_fish_pond_now()
+        if return_round() != 1:
+            fishes = breeding(fishes)
+            edit_fish_pond(fishes)
+            change_fish_pond_now()
         fish_flag_open()
-        ids = get_ids_playing()
         add_line(f"{return_round()} Раунд")
+        ids = get_ids_playing()
         for id in ids:
             context.bot.send_message(id, text=f'Начался {return_round()} раунд! в пруду {fishes} рыб')
     else:
@@ -288,8 +293,10 @@ def send_message(update, context):
         update.message.reply_text("Привет, друг! Давай поиграем!")
     elif update.message.text == "Игра":
         update.message.reply_text("Управление игрой", reply_markup=markup_game_kb_admin)
-    elif update.message.text == "Начать":
+    elif update.message.text == "Начать регистрацию на игру":
         update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_sg_kb_admin)
+    elif update.message.text == "Начать новый раунд":
+        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_g_kb_admin)
     elif update.message.text == "Остановить":
         update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_stg_kb_admin)
     elif update.message.text == "Таймер":
@@ -398,24 +405,6 @@ def start_game1(update, context):
         return ConversationHandler.END
 
 
-def first_round(update, context):
-    global user_table_list
-    if check_Admin(update.message.chat.id):
-        close_register()
-        ids = get_ids_playing()
-        user_table_list = create_table("game_table.xlsx")
-        fishes = get_fishes()
-        fish_flag_open()
-        create_log_file()
-        add_line("1 Раунд")
-        for id in ids:
-            context.bot.send_message(id, text=f'Начался первый раунд! в пруду {fishes} рыб')
-
-    else:
-        update.message.reply_text("Только Администратор может пользоваться данной командой")
-        return ConversationHandler.END
-
-
 def stop(update, context):
     update.message.reply_text("Вы остановили диалог")
     pass
@@ -460,7 +449,7 @@ def main():
         },
         fallbacks=[CommandHandler('stop', stop)]
     )
-    hand = CommandHandler('game', first_round)
+    hand = CommandHandler('game', rounds_and_first_round)
     dp.add_handler(fish_in_rounds_handler)
     dp.add_handler(hand)
     dp.add_handler(fishing_handler)
@@ -469,7 +458,6 @@ def main():
 
     dp.add_handler(CommandHandler("how_much_fish_in_pond", how_much_fish_in_pond))
     dp.add_handler(CommandHandler("stop_game", stop_game))
-    dp.add_handler(CommandHandler("rounds", rounds))
     # Регистрируем обработчик в диспетчере.
     text_handler = MessageHandler(Filters.text, send_message)
     dp.add_handler(CommandHandler("start", start))
