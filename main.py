@@ -5,7 +5,6 @@ from register_func import check_name, check_password, register_flag, add_user, c
     check_Admin, change_Admin, check_register, close_register, open_register, check_game_code
 from telegram import ReplyKeyboardMarkup
 import datetime
-import asyncio
 
 TIME = 0
 FLAG = False
@@ -84,7 +83,7 @@ def stop_game():
 def start_new_timer(update, context):
     global TIME, FLAG
     chat_id = update.message.chat_id
-    due = 120
+    due = 12
     TIME = 0
     TIME = [int(x) for x in str(datetime.datetime.now()).split(' ')[1].split('.')[0].split(':')][1::]
     TIME = TIME[0] * 60 + TIME[1]
@@ -101,7 +100,7 @@ def start_new_timer(update, context):
 def task(context):
     global FLAG
     job = context.job
-    context.bot.send_message(job.context, text='Вернулся!')
+    context.bot.send_message(job.context, text='Раунд закончен!')
     FLAG = False
 
 
