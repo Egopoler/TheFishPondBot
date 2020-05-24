@@ -12,7 +12,7 @@ import datetime
 TIME = 0
 FLAG = False
 from excel_writer import create_table, save_data, fish_pond, fish_pond_now, get_fishes, del_fishes, \
-    change_fish_pond_now, edit_fish_pond, return_round
+    change_fish_pond_now, edit_fish_pond, return_round, clear_round
 from fish_func import get_fish, del_fish, check_fish, check_life, breeding, caught_all_in_round, caught_in_round, \
     fish_flag_check, caught_check, fish_flag_open, get_caught_from_db, erease_caught, fish_flag_close
 from log_in_game import create_log_file, add_line
@@ -144,24 +144,41 @@ def fishing1(update, context):
 
 
 def stop_game(update, context):
+    global FLAG
     if check_Admin(update.message.chat.id):
         excel_writer.close_table()
         doc = open("game_table.xlsx", "rb")
         context.bot.send_document(update.message.chat.id, doc)
         close_register()
         fish_flag_close()
-        clear_game()
+        clear_round()
         ids = get_ids_playing()
+
+        if 'job' in context.chat_data:
+            job = context.chat_data['job']
+            # планируем удаление задачи (выполнится, когда будет возможность)
+            job.schedule_removal()
+            # и очищаем пользовательские данные
+            del context.chat_data['job']
+        if 'job1' in context.chat_data:
+            job = context.chat_data['job1']
+            # планируем удаление задачи (выполнится, когда будет возможность)
+            job.schedule_removal()
+            # и очищаем пользовательские данные
+            del context.chat_data['job1']
+        FLAG = False
+
         for id in ids:
             context.bot.send_message(id, text='Игра закончилась по желанию Администратора!')
+        clear_game()
 
 
 def start_new_timer(update, context):
     global TIME, FLAG
-    if check_Admin(update.message.chat.id):
+    if check_Admin(update.message.chat.id) and not FLAG:
         chat_id = update.message.chat_id
-        due = 60
-        due1 = 120
+        due = 10
+        due1 = 15
         TIME = 0
         TIME = [int(x) for x in str(datetime.datetime.now()).split(' ')[1].split('.')[0].split(':')][1::]
         TIME = TIME[0] * 60 + TIME[1]
@@ -176,6 +193,9 @@ def start_new_timer(update, context):
         for id in ids:
             context.bot.send_message(id, text='Раунд начался. У игроков есть две минуты.')
         FLAG = True
+    elif check_Admin(update.message.chat.id):
+        update.message.reply_text("Таймер уже начался")
+        return ConversationHandler.END
     else:
         update.message.reply_text("Только Администратор может пользоваться данной командой")
         return ConversationHandler.END
@@ -216,6 +236,7 @@ def task1(context):
         close_register()
         fish_flag_close()
         clear_game()
+        clear_round()
 
 
 def how_much_time(update, context):
@@ -418,8 +439,11 @@ def start_game1(update, context):
         update.message.reply_text("Вы прервали диалог")
         return ConversationHandler.END
     if check_Admin(update.message.chat.id):
+        clear_game()
         change_game_code(update.message.text, "Admin")
         open_register()
+        fish_flag_close()
+        clear_round()
         update.message.reply_text("Вы открыли регистрацию, код: {}".format(update.message.text))
         context.bot.send_message(update.message.chat.id, 'Чтобы закрыть регистрацию и начать игру нажмите /game')
         return ConversationHandler.END
