@@ -77,6 +77,25 @@ markup_hmfir_kb_admin = ReplyKeyboardMarkup(hmfir_kb_admin, one_time_keyboard=Fa
 user_table_list = []
 
 
+def authors(update, context):
+    update.message.reply_text(
+        """Авторы
+---------------------------------------
+Забурский Антон
+Telegram: @aantoshkaa
+---------------------------------------
+Кузнецов Алексей
+Instagram: @kuznechek4629
+---------------------------------------
+Поляков Егор
+Telegram: @egopoler
+---------------------------------------
+Почта для реклмы, предложений, заказов
+Kuzzne4eK@yandex.ru
+---------------------------------------
+        """)
+
+
 def how_much_fish_in_pond(update, context):
     if update.message.chat.id in get_ids_playing() or check_Admin(update.message.chat.id):
         fishes = get_fishes()
