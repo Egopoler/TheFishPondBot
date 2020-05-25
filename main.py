@@ -11,6 +11,7 @@ import datetime
 
 TIME = 0
 FLAG = False
+FLAG_GAME = False
 from excel_writer import create_table, save_data, fish_pond, fish_pond_now, get_fishes, del_fishes, \
     change_fish_pond_now, edit_fish_pond, return_round, clear_round
 from fish_func import get_fish, del_fish, check_fish, check_life, breeding, caught_all_in_round, caught_in_round, \
@@ -97,8 +98,8 @@ def fishing(update, context):
 Если вы хотите прервать диалог напишите Стоп. """)
         else:
             update.message.reply_text("""Напишите количество рыб, которое вы хотите поймать от 0 до 3.
-            Вы не можете поймать больше рыбы, чем есть в пруду.
-            Если вы хотите прервать диалог напишите Стоп. """)
+Вы не можете поймать больше рыбы, чем есть в пруду.
+Если вы хотите прервать диалог напишите Стоп. """)
         return 1
     else:
         return ConversationHandler.END
@@ -128,49 +129,54 @@ def fishing1(update, context):
             if fish_pond_now == 0:
                 update.message.reply_text(
                     """Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду.
-Сейчас нет рыб в пруду""")
+Сейчас нет рыб в пруду.""")
             else:
                 update.message.reply_text(
-                    "Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду")
+                    "Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду.")
             return ConversationHandler.END
     except Exception:
         if fish_pond_now == 0:
             update.message.reply_text(
-                "Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду. Сейчас нет рыб в пруду")
+                "Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду. Сейчас нет рыб в пруду.")
         else:
             update.message.reply_text(
-                "Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду")
+                "Нужно ввести число от 0 до 3, которое не должно превышать кол-во рыб в пруду.")
         return ConversationHandler.END
 
 
 def stop_game(update, context):
-    global FLAG
-    if check_Admin(update.message.chat.id):
-        excel_writer.close_table()
-        doc = open("game_table.xlsx", "rb")
-        context.bot.send_document(update.message.chat.id, doc)
-        close_register()
-        fish_flag_close()
-        clear_round()
-        ids = get_ids_playing()
+    global FLAG, FLAG_GAME
+    if FLAG_GAME:
+        if check_Admin(update.message.chat.id):
+            excel_writer.close_table()
+            doc = open("game_table.xlsx", "rb")
+            context.bot.send_document(update.message.chat.id, doc)
+            close_register()
+            fish_flag_close()
+            clear_round()
+            ids = get_ids_playing()
 
-        if 'job' in context.chat_data:
-            job = context.chat_data['job']
-            # планируем удаление задачи (выполнится, когда будет возможность)
-            job.schedule_removal()
-            # и очищаем пользовательские данные
-            del context.chat_data['job']
-        if 'job1' in context.chat_data:
-            job = context.chat_data['job1']
-            # планируем удаление задачи (выполнится, когда будет возможность)
-            job.schedule_removal()
-            # и очищаем пользовательские данные
-            del context.chat_data['job1']
-        FLAG = False
+            if 'job' in context.chat_data:
+                job = context.chat_data['job']
+                # планируем удаление задачи (выполнится, когда будет возможность)
+                job.schedule_removal()
+                # и очищаем пользовательские данные
+                del context.chat_data['job']
+            if 'job1' in context.chat_data:
+                job = context.chat_data['job1']
+                # планируем удаление задачи (выполнится, когда будет возможность)
+                job.schedule_removal()
+                # и очищаем пользовательские данные
+                del context.chat_data['job1']
+            FLAG = False
 
-        for id in ids:
-            context.bot.send_message(id, text='Игра закончилась по желанию Администратора!')
-        clear_game()
+            for id in ids:
+                context.bot.send_message(id, text='Игра закончилась по желанию Администратора!')
+            clear_game()
+            FLAG_GAME = False
+    else:
+        update.message.reply_text("Нет активной игры.")
+        return ConversationHandler.END
 
 
 def start_new_timer(update, context):
@@ -210,7 +216,7 @@ def task(context):
 
 
 def task1(context):
-    global FLAG
+    global FLAG, FLAG_GAME
     job = context.job
     ids = get_ids_playing()
     for id in ids:
@@ -237,6 +243,7 @@ def task1(context):
         fish_flag_close()
         clear_game()
         clear_round()
+        FLAG_GAME = False
 
 
 def how_much_time(update, context):
@@ -270,9 +277,9 @@ def rounds_and_first_round(update, context):
         add_line(f"{return_round()} Раунд")
         ids = get_ids_playing()
         for id in ids:
-            context.bot.send_message(id, text=f'Начался {return_round()} раунд! в пруду {fishes} рыб')
+            context.bot.send_message(id, text=f'Начался {return_round()} раунд! В пруду {fishes} рыб.')
     else:
-        update.message.reply_text("Только Администратор может пользоваться данной командой")
+        update.message.reply_text("Только Администратор может пользоваться данной командой.")
         return ConversationHandler.END
 
 
@@ -312,53 +319,53 @@ def send_message(update, context):
     if update.message.text.lower() == "привет":
         update.message.reply_text("Привет, друг! Давай поиграем!")
     elif update.message.text == "Остаток рыб":
-        update.message.reply_text("Здесь можно узнать сколько рыб осталосб в пруду", reply_markup=markup_fish_kb_user)
+        update.message.reply_text("Здесь можно узнать сколько рыб осталосб в пруду.", reply_markup=markup_fish_kb_user)
     elif update.message.text == "Сколько рыб в пруду":
-        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_hmfip_kb_user)
+        update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_hmfip_kb_user)
     elif update.message.text == "Остаток времени":
-        update.message.reply_text("Здесь можно узнать сколько осталось времени", reply_markup=markup_time_kb_user)
+        update.message.reply_text("Здесь можно узнать сколько осталось времени.", reply_markup=markup_time_kb_user)
     elif update.message.text == "Сколько осталось времени":
-        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_hmt_kb_user)
+        update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_hmt_kb_user)
     elif update.message.text == "Мои рыбы":
-        update.message.reply_text("Здесь можно узнать сколько у вас рыб", reply_markup=markup_my_fish_kb_user)
+        update.message.reply_text("Здесь можно узнать сколько у вас рыб.", reply_markup=markup_my_fish_kb_user)
     elif update.message.text == "Сколько у меня рыб":
-        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_mf_kb_user)
+        update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_mf_kb_user)
     elif update.message.text == "Регистрация":
-        update.message.reply_text("Здесь происходит регистрация пользователя", reply_markup=markup_reg_kb_user)
+        update.message.reply_text("Здесь происходит регистрация пользователя.", reply_markup=markup_reg_kb_user)
     elif update.message.text == "Регистрация игрока":
-        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_r_kb_user)
+        update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_r_kb_user)
     elif update.message.text == "Рыбалка":
-        update.message.reply_text("Тут можно ловить рыбку", reply_markup=markup_fishing_kb_user)
+        update.message.reply_text("Тут можно ловить рыбку.", reply_markup=markup_fishing_kb_user)
     elif update.message.text == "Ловить рыбу":
-        update.message.reply_text("Нажмите на /fishing , чтобы начать ловить рыбу ", reply_markup=markup_f_kb_user)
+        update.message.reply_text("Нажмите на /fishing , чтобы начать ловить рыбу.", reply_markup=markup_f_kb_user)
     elif update.message.text == "Назад":
-        update.message.reply_text("Вас перенесло в главное меню", reply_markup=markup_main_kb_user)
+        update.message.reply_text("Вас перенесло в главное меню.", reply_markup=markup_main_kb_user)
     elif update.message.text.lower() == "привет":
         update.message.reply_text("Привет, друг! Давай поиграем!")
     elif update.message.text == "Игра":
-        update.message.reply_text("Управление игрой", reply_markup=markup_game_kb_admin)
+        update.message.reply_text("Управление игрой.", reply_markup=markup_game_kb_admin)
     elif update.message.text == "Начать регистрацию на игру":
-        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_sg_kb_admin)
+        update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_sg_kb_admin)
     elif update.message.text == "Начать новый раунд":
-        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_g_kb_admin)
+        update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_g_kb_admin)
     elif update.message.text == "Остановить":
-        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_stg_kb_admin)
+        update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_stg_kb_admin)
     elif update.message.text == "Таймер":
         update.message.reply_text("Управление таймером", reply_markup=markup_timer_kb_admin)
     elif update.message.text == "Включить таймер (2 мин)":
-        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_snt_kb_admin)
+        update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_snt_kb_admin)
     elif update.message.text == "Статусы":
-        update.message.reply_text("Управление статусами", reply_markup=markup_statuses_kb_admin)
+        update.message.reply_text("Управление статусами.", reply_markup=markup_statuses_kb_admin)
     elif update.message.text == "Оcтаток времени":
-        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_hmt_kb_admin)
+        update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_hmt_kb_admin)
     elif update.message.text == "Лог поведения":
-        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_l_kb_admin)
+        update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_l_kb_admin)
     elif update.message.text == "Кол-во рыб в пруду":
-        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_hmfip_kb_admin)
+        update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_hmfip_kb_admin)
     elif update.message.text == "Кол-во рыб в N раунде":
-        update.message.reply_text("Нажмите на команду для выполнения действия", reply_markup=markup_hmfir_kb_admin)
+        update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_hmfir_kb_admin)
     elif update.message.text == "Назад <-":
-        update.message.reply_text("вас перенесло в главное меню", reply_markup=markup_main_kb_admin)
+        update.message.reply_text("вас перенесло в главное меню.", reply_markup=markup_main_kb_admin)
 
 
 def start(update, context):
@@ -370,7 +377,7 @@ def start(update, context):
 
 def register(update, context):
     update.message.reply_text("""Напишите имя пользователя, под которым вы хотите войти.
-    Если вы хотите прервать диалог напишите Стоп.""")
+Если вы хотите прервать диалог напишите Стоп.""")
     return 1
 
 
@@ -381,19 +388,19 @@ def register1(update, context):
     return_check_name = check_name(update.message.text, update.message.chat.id)
     if return_check_name == 1:
         update.message.reply_text("""Вы заходите под именем Администратра, напишите пароль.
-    Если вы хотите прервать диалог напишите Стоп.""")
+Если вы хотите прервать диалог напишите Стоп.""")
         context.user_data['return_check_name'] = return_check_name
         return 2
     elif return_check_name == 2:
         update.message.reply_text("""Имя пользователя уже занято, введите другое.
-    Если вы хотите прервать диалог напишите Стоп.""")
+Если вы хотите прервать диалог напишите Стоп.""")
     elif return_check_name == 3:
         update.message.reply_text("""Вы уже зарегистрированы""")
     elif return_check_name == 0:
         context.user_data['return_check_name'] = return_check_name
         context.user_data["name"] = update.message.text
         update.message.reply_text("""Введитете код, который позволит вам присоединиться к игре.
-    Если вы хотите прервать диалог напишите Стоп.""")
+Если вы хотите прервать диалог напишите Стоп.""")
         return 2
 
 
@@ -418,37 +425,48 @@ def register2(update, context):
                 return ConversationHandler.END
             else:
                 update.message.reply_text("""Вы ввели неправильный код, попробуйте еще раз.
-    Если вы хотите прервать диалог напишите Стоп.""")
+Если вы хотите прервать диалог напишите Стоп.""")
         else:
             update.message.reply_text("В данный момент регистрация закрыта")
             return ConversationHandler.END
 
 
 def start_game(update, context):
-    if check_Admin(update.message.chat.id):
-        update.message.reply_text("""Введите код, который позволит пользователям присоединиться к игре.
+    global FLAG_GAME
+    if not FLAG_GAME:
+        if check_Admin(update.message.chat.id):
+            update.message.reply_text("""Введите код, который позволит пользователям присоединиться к игре.
     Если вы хотите прервать диалог напишите Стоп.""")
-        return 1
+            return 1
+        else:
+            update.message.reply_text("Только Администратор может пользоваться данной командой")
+            return ConversationHandler.END
     else:
-        update.message.reply_text("Только Администратор может пользоваться данной командой")
+        update.message.reply_text("Игра уже идёт. Нужно завершить игру, чтобы начать новую.")
         return ConversationHandler.END
 
 
 def start_game1(update, context):
-    if update.message.text.lower() == "стоп":
-        update.message.reply_text("Вы прервали диалог")
-        return ConversationHandler.END
-    if check_Admin(update.message.chat.id):
-        clear_game()
-        change_game_code(update.message.text, "Admin")
-        open_register()
-        fish_flag_close()
-        clear_round()
-        update.message.reply_text("Вы открыли регистрацию, код: {}".format(update.message.text))
-        context.bot.send_message(update.message.chat.id, 'Чтобы закрыть регистрацию и начать игру нажмите /game')
-        return ConversationHandler.END
+    global FLAG_GAME
+    if not FLAG_GAME:
+        if update.message.text.lower() == "стоп":
+            update.message.reply_text("Вы прервали диалог")
+            return ConversationHandler.END
+        if check_Admin(update.message.chat.id):
+            clear_game()
+            change_game_code(update.message.text, "Admin")
+            open_register()
+            fish_flag_close()
+            clear_round()
+            FLAG_GAME = True
+            update.message.reply_text("Вы открыли регистрацию, код: {}".format(update.message.text))
+            context.bot.send_message(update.message.chat.id, 'Чтобы закрыть регистрацию и начать игру нажмите /game')
+            return ConversationHandler.END
+        else:
+            update.message.reply_text("Только Администратор может пользоваться данной командой.")
+            return ConversationHandler.END
     else:
-        update.message.reply_text("Только Администратор может пользоваться данной командой")
+        update.message.reply_text("Игра уже идёт. Нужно завершить игру, чтобы начать новую.")
         return ConversationHandler.END
 
 
@@ -461,12 +479,6 @@ def main():
     updater = Updater(TOKEN, use_context=True)
 
     dp = updater.dispatcher
-
-    # Создаём обработчик сообщений типа Filters.text
-    # из описанной выше функции echo()
-    # После регистрации обработчика в диспетчере
-    # эта функция будет вызываться при получении сообщения
-    # с типом "текст", т. е. текстовых сообщений.
     fish_in_rounds_handler = ConversationHandler(
         entry_points=[CommandHandler('how_much_fish_in_round', how_much_fish_in_round)],
         states={
@@ -505,7 +517,6 @@ def main():
 
     dp.add_handler(CommandHandler("how_much_fish_in_pond", how_much_fish_in_pond))
     dp.add_handler(CommandHandler("stop_game", stop_game))
-    # Регистрируем обработчик в диспетчере.
     text_handler = MessageHandler(Filters.text, send_message)
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("how_much_time", how_much_time))
