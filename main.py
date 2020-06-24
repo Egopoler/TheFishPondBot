@@ -19,7 +19,7 @@ from fish_func import get_fish, del_fish, check_fish, check_life, breeding, caug
 from log_in_game import create_log_file, add_line
 
 main_kb_user = [["Остаток рыб", "Остаток времени", "Мои рыбы"],
-                ["Регистрация", "Рыбалка"]]
+                ["Регистрация", "Рыбалка", "Авторы"]]
 fish_kb_user = [['Сколько рыб в пруду'], ['Назад']]
 time_kb_user = [['Сколько осталось времени'], ['Назад']]
 my_fish_kb_user = [['Сколько у меня рыб'], ['Назад']]
@@ -29,13 +29,15 @@ fishing_kb_user = [['Ловить рыбу'], ['Назад']]
 main_kb_admin = [["Игра", "Таймер"], ["Статусы"]]
 game_kb_admin = [["Начать регистрацию на игру", "Остановить"], ["Начать новый раунд", "Назад <-"]]
 timer_kb_admin = [["Включить таймер (2 мин)"], ["Назад <-"]]
-statuses_kb_admin = [["Оcтаток времени", "Лог поведения", "Кол-во рыб в пруду"], ["Кол-во рыб в N раунде", "Назад <-"]]
+statuses_kb_admin = [["Оcтаток времени", "Лог поведения", "Кол-во рыб в пруду", "Авторы :)"],
+                     ["Кол-во рыб в N раунде", "Назад <-"]]
 
 hmfip_kb_user = [["/how_much_fish_in_pond", "Назад"]]
 hmt_kb_user = [["/how_much_time", "Назад"]]
 mf_kb_user = [["/my_fish", "Назад"]]
 r_kb_user = [["/register", "Назад"]]
 f_kb_user = [['/fishing'], ['Назад']]
+authors_kb_user = [["/authors", "Назад"]]
 
 sg_kb_admin = [["/start_game", "Назад <-"]]
 g_kb_admin = [["/game", "Назад <-"]]
@@ -45,6 +47,7 @@ hmt_kb_admin = [["/how_much_time", "Назад <-"]]
 l_kb_admin = [["/log_conduct", "Назад <-"]]
 hmfip_kb_admin = [["/how_much_fish_in_pond", "Назад <-"]]
 hmfir_kb_admin = [["/how_much_fish_in_round", "Назад <-"]]
+authors_kb_admin = [["/authors", "Назад <-"]]
 
 # user
 markup_main_kb_user = ReplyKeyboardMarkup(main_kb_user, one_time_keyboard=False)
@@ -53,6 +56,7 @@ markup_time_kb_user = ReplyKeyboardMarkup(time_kb_user, one_time_keyboard=False)
 markup_my_fish_kb_user = ReplyKeyboardMarkup(my_fish_kb_user, one_time_keyboard=False)
 markup_reg_kb_user = ReplyKeyboardMarkup(reg_kb_user, one_time_keyboard=False)
 markup_fishing_kb_user = ReplyKeyboardMarkup(fishing_kb_user, one_time_keyboard=False)
+markup_authors_kb_user = ReplyKeyboardMarkup(authors_kb_user, one_time_keyboard=False)
 # admin
 markup_main_kb_admin = ReplyKeyboardMarkup(main_kb_admin, one_time_keyboard=False)
 markup_game_kb_admin = ReplyKeyboardMarkup(game_kb_admin, one_time_keyboard=False)
@@ -73,6 +77,7 @@ markup_hmt_kb_admin = ReplyKeyboardMarkup(hmt_kb_admin, one_time_keyboard=False)
 markup_l_kb_admin = ReplyKeyboardMarkup(l_kb_admin, one_time_keyboard=False)
 markup_hmfip_kb_admin = ReplyKeyboardMarkup(hmfip_kb_admin, one_time_keyboard=False)
 markup_hmfir_kb_admin = ReplyKeyboardMarkup(hmfir_kb_admin, one_time_keyboard=False)
+markup_authors_kb_admin = ReplyKeyboardMarkup(authors_kb_admin, one_time_keyboard=False)
 
 user_table_list = []
 
@@ -359,6 +364,9 @@ def send_message(update, context):
         update.message.reply_text("Нажмите на /fishing , чтобы начать ловить рыбу.", reply_markup=markup_f_kb_user)
     elif update.message.text == "Назад":
         update.message.reply_text("Вас перенесло в главное меню.", reply_markup=markup_main_kb_user)
+    elif update.message.text == "Авторы":
+        update.message.reply_text("Авторы этого проекта.",
+                                  reply_markup=markup_authors_kb_user)
     elif update.message.text.lower() == "привет":
         update.message.reply_text("Привет, друг! Давай поиграем!")
     elif update.message.text == "Игра":
@@ -383,6 +391,9 @@ def send_message(update, context):
         update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_hmfip_kb_admin)
     elif update.message.text == "Кол-во рыб в N раунде":
         update.message.reply_text("Нажмите на команду для выполнения действия.", reply_markup=markup_hmfir_kb_admin)
+    elif update.message.text == "Авторы :)":
+        update.message.reply_text("Авторы этого проекта.",
+                                  reply_markup=markup_authors_kb_admin)
     elif update.message.text == "Назад <-":
         update.message.reply_text("вас перенесло в главное меню.", reply_markup=markup_main_kb_admin)
 
@@ -534,6 +545,7 @@ def main():
     dp.add_handler(register_handler)
     dp.add_handler(start_game_handler)
 
+    dp.add_handler(CommandHandler("authors", authors))
     dp.add_handler(CommandHandler("how_much_fish_in_pond", how_much_fish_in_pond))
     dp.add_handler(CommandHandler("stop_game", stop_game))
     text_handler = MessageHandler(Filters.text, send_message)
