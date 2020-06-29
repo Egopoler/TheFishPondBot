@@ -96,6 +96,7 @@ Instagram: @kuznechek4629
 Telegram: @egopoler
 ---------------------------------------
 Почта для реклмы, предложений, заказов
+и сообщений о багах(ошибках)
 Kuzzne4eK@yandex.ru
 ---------------------------------------
         """)
@@ -146,8 +147,8 @@ def fishing1(update, context):
             get_fish(name, fish)
             caught_in_round(update.message.chat.id, fish)
             del_fishes(fish)
-            update.message.reply_text(f'Вы поймали {fish} рыбы')
-            add_line(f"{name} поймал {fish} рыб")
+            update.message.reply_text('Вы поймали {} рыбы'.format(fish))
+            add_line("{} поймал {} рыб".format(name, fish))
             return ConversationHandler.END
         else:
             if fish_pond_now == 0:
@@ -280,7 +281,7 @@ def how_much_time(update, context):
         if ost_time <= 0:
             return 1
         else:
-            update.message.reply_text(f'Осталось {ost_time} секунд')
+            update.message.reply_text('Осталось {} секунд'.format(ost_time))
             return 1
 
 
@@ -301,7 +302,7 @@ def rounds_and_first_round(update, context):
         add_line(f"{return_round()} Раунд")
         ids = get_ids_playing()
         for id in ids:
-            context.bot.send_message(id, text=f'Начался {return_round()} раунд! В пруду {fishes} рыб.')
+            context.bot.send_message(id, text='Начался {} раунд! В пруду {} рыб.'.format(return_round(), fishes))
     else:
         update.message.reply_text("Только Администратор может пользоваться данной командой.")
         return ConversationHandler.END

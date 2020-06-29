@@ -107,7 +107,7 @@ def get_caught_from_db(names_list, db="TheFishPondBot.sqlite"):
             caught = '-'
         elif caught is None:
             caught = 0
-            add_line(f"{name} прогулял рыбалку и получил 0 рыб")
+            add_line("{} прогулял рыбалку и получил 0 рыб".format(name))
         list_return.append(caught)
     return list_return
 
