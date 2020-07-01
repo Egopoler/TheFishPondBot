@@ -255,7 +255,7 @@ def task1(context):
         del_fish(name)
         if not check_life(name):
             change_game_code(None, name)
-            add_line(f"{name} умер")
+            add_line("{} умер".format(name))
             context.bot.send_message(get_id_for_name(name), text='Вы умерли от голода :(')
     if excel_writer.check_fish_pond_now():
         ids = get_ids_playing()
@@ -299,7 +299,7 @@ def rounds_and_first_round(update, context):
             edit_fish_pond(fishes)
             change_fish_pond_now()
         fish_flag_open()
-        add_line(f"{return_round()} Раунд")
+        add_line("{} Раунд".format(return_round()))
         ids = get_ids_playing()
         for id in ids:
             context.bot.send_message(id, text='Начался {} раунд! В пруду {} рыб.'.format(return_round(), fishes))
