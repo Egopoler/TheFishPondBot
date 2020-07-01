@@ -208,8 +208,8 @@ def start_new_timer(update, context):
     global TIME, FLAG
     if check_Admin(update.message.chat.id) and not FLAG:
         chat_id = update.message.chat_id
-        due = 10
-        due1 = 15
+        due = 60
+        due1 = 120
         TIME = 0
         TIME = [int(x) for x in str(datetime.datetime.now()).split(' ')[1].split('.')[0].split(':')][1::]
         TIME = TIME[0] * 60 + TIME[1]
